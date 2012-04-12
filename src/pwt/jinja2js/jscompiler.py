@@ -5,29 +5,9 @@ from cStringIO import StringIO
 from jinja2.visitor import NodeVisitor
 import jinja2.nodes
 import jinja2.compiler
-import jinja2.ext
-from jinja2.utils import escape, next
+from jinja2.utils import escape
 
 import nodes
-
-class Namespace(jinja2.ext.Extension):
-    """
-    [Token(1, 'name', 'examples'),
-     Token(1, 'dot', u'.'),
-     Token(1, 'name', 'const'),
-     Token(1, 'block_end', u'%}')
-     ]
-    """
-
-    tags = set(["namespace"])
-
-    def parse(self, parser):
-        node = nodes.NamespaceNode(lineno = next(parser.stream).lineno)
-        namespace = []
-        while not parser.is_tuple_end():
-            namespace.append(parser.stream.next().value)
-        node.namespace = "".join(namespace)
-        return node
 
 
 BINOPERATORS = {
@@ -79,8 +59,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
     def visit_Macro(self, node):
         self.identifiers.declared_locally.add(
-            ("%s.%s" %(self.ctx.namespace, node.name)).encode("utf-8")
-            )
+            ("%s.%s" % (self.ctx.namespace, node.name)).encode("utf-8"))
 
     def visit_Import(self, node):
         # register import target as declare_locally
@@ -128,7 +107,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
 class JSFrame(jinja2.compiler.Frame):
 
-    def __init__(self, environment, eval_ctx, parent = None):
+    def __init__(self, environment, eval_ctx, parent=None):
         super(JSFrame, self).__init__(eval_ctx, parent)
 
         # map local variables to imported code
@@ -166,7 +145,7 @@ class JSFrame(jinja2.compiler.Frame):
         return frame
 
 
-class StringBuilder(object):
+class Concat(object):
 
     def __init__(self, environment=None):
         self.stream = StringIO()
@@ -204,7 +183,7 @@ class StringBuilder(object):
         self._indentation -= step
 
     # Modified
-    def write(self, x, node = None):
+    def write(self, x, node=None):
         """Write a string into the output stream."""
         self.mark(node)
         if self._new_lines:
@@ -240,52 +219,14 @@ class StringBuilder(object):
 
     # special methods that we can override to comform to different code styles
 
-    def writeline_provides(self, node, frame, namespace):
-        self.writeline("goog.provide('" + namespace + "');")
-
-    def writeline_require(self, node, frame, namespace):
-        self.newline(node)
-        self.write_require(node, frame, namespace)
-
-    def write_require(self, node, frame, namespace):
-        self.write("goog.require('%s');" % namespace)
-
     # output formating
-
-    def writeline_startoutput(self, node, frame):
-        self.writeline(
-            "var output = %s_sb || new goog.string.StringBuffer();" %(
-                frame.parameter_prefix))
-
-    def writeline_endoutput(self, node, frame):
-        self.writeline(
-            "if (!%s_sb) return output.toString();" % frame.parameter_prefix)
-
-    def writeline_outputappend(self, node, frame):
-        self.writeline("output.append(", node)
-
-    def write_outputappend_add(self, node, frame):
-        self.write(", ")
-
-    def write_outputappend_end(self, node, frame):
-        self.write(");")
-
-    def write_htmlescape(self, node, frame):
-        self.write("goog.string.htmlEscape(String(")
-
-    def write_htmlescape_end(self, node, frame):
-        self.write("))")
-
-
-class Concat(StringBuilder):
 
     def writeline_provides(self, node, frame, namespace):
         parts = namespace.split(".")
         for idx, part in enumerate(parts):
             ns = ".".join(parts[:idx + 1])
-            self.writeline(
-                "if (typeof %s == 'undefined') { %s%s = {}; }" %(
-                    ns, idx == 0 and "var " or "", ns), node)
+            self.writeline("if (typeof %s == 'undefined') { %s%s = {}; }"
+                           % (ns, idx == 0 and "var " or "", ns), node)
 
     def writeline_require(self, node, frame, namespace):
         self.newline(node)
@@ -339,6 +280,8 @@ class BaseCodeGenerator(NodeVisitor):
 
 
 class CodeGenerator(BaseCodeGenerator):
+    def __init__(self):
+        self.writer = Concat()
 
     def visit_Template(self, node):
         """
@@ -346,15 +289,6 @@ class CodeGenerator(BaseCodeGenerator):
 
         Includes imports, macro definitions, etc.
         """
-        namespace = list(node.find_all(nodes.NamespaceNode))
-        if len(namespace) > 1:
-            raise jinja2.compiler.TemplateAssertionError(
-                "You can only supply one namespace per template",
-                0, self.name, self.filename)
-        if namespace:
-            namespace = namespace[0].namespace
-        else:
-            namespace = ""
 
         have_extends = node.find(jinja2.nodes.Extends) is not None
         if have_extends:
@@ -366,18 +300,11 @@ class CodeGenerator(BaseCodeGenerator):
 
         eval_ctx = jinja2.nodes.EvalContext(self.environment, self.name)
         eval_ctx.encoding = "utf-8"
-        eval_ctx.namespace = namespace.encode(eval_ctx.encoding)
 
         # process the root
         frame = JSFrame(self.environment, eval_ctx)
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
-
-        if namespace:
-            self.writer.writeline_provides(node, frame, namespace)
-        self.writer.writeline_require(node, frame, "goog.string")
-        self.writer.writeline_require(node, frame, "goog.string.StringBuffer")
-        self.writer.newline()
 
         self.blockvisit(node.body, frame)
 
@@ -401,20 +328,10 @@ class CodeGenerator(BaseCodeGenerator):
         self.writer.write(node.data)
 
 
-class ClosureCodeGenerator(CodeGenerator):
-
-    def __init__(self, environment, name, filename):
-        super(ClosureCodeGenerator, self).__init__(environment, name, filename)
-
-        self.writer = StringBuilder()
-
-
 class ConcatCodeGenerator(CodeGenerator):
 
     def __init__(self, environment, name, filename):
         super(ConcatCodeGenerator, self).__init__(environment, name, filename)
-
-        self.writer = Concat()
 
 
 STRINGBUILDER = "StringBuilder"
@@ -426,9 +343,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
     # JavaScript we need to render the templates. Note that we do this
     # here seperate from the template generator above as we want to restrict
     # the Jinja2 template syntax for the JS implementation and we want to
-    # format the generate code a bit like the templates. Gaps between templates,
-    # comments should be displayed in the JS file. We need them for any closure
-    # compiler hints we may want to put in.
+    # format the generate code a bit like the templates. Gaps between
+    # templates, comments should be displayed in the JS file. We need them for
+    # any closure compiler hints we may want to put in.
 
     def __init__(self, environment, writer, name, filename):
         super(MacroCodeGenerator, self).__init__(environment, name, filename)
@@ -442,7 +359,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if frame.toplevel:
             return
 
-        finalize = str # unicode
+        finalize = str  # unicode
 
         # try to evaluate as many chunks as possible into a static
         # string at compile time.
@@ -555,7 +472,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 "Filter does not exist: '%s'" % node.name,
                 node.lineno, self.name, self.filename)
 
-    def visit_Const(self, node, frame, dotted_name = None):
+    def visit_Const(self, node, frame, dotted_name=None):
         # XXX - need to know the JavaScript ins and out here.
         val = node.value
         if val is None:
@@ -594,7 +511,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
             if isinstance(item.key, jinja2.nodes.Const):
                 if "." in item.key.value:
                     raise jinja2.compiler.TemplateAssertionError(
-                        "My templates get confused when you try and create a dictionary with a key with a dot in it.", item.key.lineno, self.name, self.filename)
+                        "My templates get confused when you try and create a"
+                        " dictionary with a key with a dot in it.",
+                        item.key.lineno, self.name, self.filename)
                 self.writer.write(item.key.value)
             elif isinstance(item.key, jinja2.nodes.Name):
                 self.writer.write(item.key.name)
@@ -608,7 +527,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         self.writer.write("}")
 
-    def visit_Name(self, node, frame, dotted_name = None):
+    def visit_Name(self, node, frame, dotted_name=None):
         # declared_parameter
         # declared
         # outer_undeclared
@@ -636,13 +555,13 @@ class MacroCodeGenerator(BaseCodeGenerator):
         elif name in frame.reassigned_names:
             output = frame.reassigned_names[name]
 
-            frame.assigned_names.add(name) # neccessary?
+            frame.assigned_names.add(name)  # neccessary?
             isparam = True
         elif name in frame.identifiers.declared or \
                  name in frame.identifiers.declared_locally:
             output = name
 
-            frame.assigned_names.add(name) # neccessary?
+            frame.assigned_names.add(name)  # neccessary?
         elif name in frame.identifiers.imports:
             # This is an import.
             output = frame.identifiers.imports[name]
@@ -684,7 +603,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.visit(node.arg, frame)
         self.writer.write("]")
 
-    def visit_Getattr(self, node, frame, dotted_name = None):
+    def visit_Getattr(self, node, frame, dotted_name=None):
         # We only need to check when `loop` is the first name-space in the
         # Getattr node. Sometimes we have more then one level name-spaces and
         # we are inside a for loop, likely when we are calling other macros.
@@ -694,18 +613,19 @@ class MacroCodeGenerator(BaseCodeGenerator):
             elif node.attr == "index":
                 self.writer.write("%sIndex + 1" % frame.forloop_buffer)
             elif node.attr == "revindex0":
-                self.writer.write("%sListLen - %sIndex" %(frame.forloop_buffer,
-                                                          frame.forloop_buffer))
+                self.writer.write("%sListLen - %sIndex"
+                                  % (frame.forloop_buffer,
+                                     frame.forloop_buffer))
             elif node.attr == "revindex":
-                self.writer.write(
-                    "%sListLen - %sIndex - 1" %(frame.forloop_buffer,
-                                                frame.forloop_buffer))
+                self.writer.write("%sListLen - %sIndex - 1"
+                                  % (frame.forloop_buffer,
+                                     frame.forloop_buffer))
             elif node.attr == "first":
                 self.writer.write("%sIndex == 0" % frame.forloop_buffer)
             elif node.attr == "last":
-                self.writer.write(
-                    "%sIndex == (%sListLen - 1)" %(frame.forloop_buffer,
-                                                   frame.forloop_buffer))
+                self.writer.write("%sIndex == (%sListLen - 1)"
+                                  % (frame.forloop_buffer,
+                                     frame.forloop_buffer))
             elif node.attr == "length":
                 self.writer.write("%sListLen" % frame.forloop_buffer)
             else:
@@ -720,7 +640,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 write_variable = True
 
             # collect variable name
-            param = self.visit(node.node, frame, dotted_name)
+            self.visit(node.node, frame, dotted_name)
             dotted_name.append(node.attr)
 
             if write_variable:
@@ -808,7 +728,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writer.writeline("}")
 
     def visit_For(self, node, frame):
-        children = node.iter_child_nodes(exclude = ("iter",))
+        node.iter_child_nodes(exclude=("iter",))
 
         if node.recursive:
             raise NotImplementedError(
@@ -818,9 +738,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # is necessary if the loop is in recursive mode or if the special loop
         # variable is accessed in the body.
         extended_loop = "loop" in jinja2.compiler.find_undeclared(
-            node.iter_child_nodes(only = ("body",)), ("loop",))
+            node.iter_child_nodes(only=("body",)), ("loop",))
 
-        loop_frame = frame.soft() # JavaScript for loops don't change namespace
+        # JavaScript for loops don't change namespace
+        loop_frame = frame.soft()
 
         if extended_loop:
             loop_frame.identifiers.add_special("loop")
@@ -835,22 +756,21 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.visit(node.iter, loop_frame)
         self.writer.write(";")
 
-        self.writer.writeline(
-            "var %(name)sListLen = %(name)sList.length;" %{
-                "name": node.target.name})
+        self.writer.writeline("var %(name)sListLen = %(name)sList.length;"
+                              % {"name": node.target.name})
         if node.else_:
             self.writer.writeline("if (%sListLen > 0) {" % node.target.name)
             self.writer.indent()
 
-        self.writer.writeline(
-            "for (var %(name)sIndex = 0; %(name)sIndex < %(name)sListLen; %(name)sIndex++) {" %{"name": node.target.name})
+        self.writer.writeline("for (var %(name)sIndex = 0; %(name)sIndex <"
+                              " %(name)sListLen; %(name)sIndex++) {"
+                              % {"name": node.target.name})
         self.writer.indent()
 
-        self.writer.writeline(
-            "var %(name)sData = %(name)sList[%(name)sIndex];" %{
-                "name": node.target.name})
-        loop_frame.reassigned_names[node.target.name] = \
-                                                     "%sData" % node.target.name
+        self.writer.writeline("var %(name)sData = %(name)sList[%(name)sIndex];"
+                              % {"name": node.target.name})
+        loop_frame.reassigned_names[node.target.name] =\
+                "%sData" % node.target.name
         self.blockvisit(node.body, loop_frame)
         self.writer.outdent()
         self.writer.writeline("}")
@@ -863,7 +783,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.writer.outdent()
             self.writer.writeline("}")
 
-    def function_scoping(self, node, frame, parameter_prefix, children = None):
+    def function_scoping(self, node, frame, parameter_prefix, children=None):
         if children is None:
             children = node.iter_child_nodes()
 
@@ -886,10 +806,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if overriden_closure_vars:
             raise jinja2.compiler.TemplateAssertionError(
                 "It's not possible to set and access variables "
-                "derived from an outer scope! (affects: %s)" %(
+                "derived from an outer scope! (affects: %s)" % (
                     ", ".join(sorted(overriden_closure_vars)), node.lineno),
-                lineno, self.name, self.filename
-                )
+                    node.lineno, self.name, self.filename)
 
         # remove variables from a closure from the frame's undeclared
         # identifiers.
@@ -905,18 +824,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         return func_frame
 
-    def macro_body(
-            self, name, node, frame, children = None, parameter_prefix = "opt"):
-        frame = self.function_scoping(
-            node, frame, children = children,
-            parameter_prefix = parameter_prefix)
+    def macro_body(self, name, node, frame, children=None,
+                   parameter_prefix="opt"):
+        frame = self.function_scoping(node, frame, children=children,
+                                      parameter_prefix=parameter_prefix)
 
-        self.writer.writeline(
-            "%s = function(%s_data, %s_sb, %s_caller) {" %(
-                name,
-                frame.parameter_prefix,
-                frame.parameter_prefix,
-                frame.parameter_prefix))
+        self.writer.writeline("%s = function(%s_data, %s_sb, %s_caller) {"
+                              % (name, frame.parameter_prefix,
+                                 frame.parameter_prefix,
+                                 frame.parameter_prefix))
         self.writer.indent()
         if node.defaults:
             # We have defaults to work with. Loop over all the default keys
@@ -959,27 +875,18 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if frame.eval_ctx.namespace:
             name = frame.eval_ctx.namespace + "." + name
 
-        if getattr(self.environment, "add_compiler_annotations", False):
-            self.writer.writeline('/**')
-            self.writer.writeline(' * @param {Object.<string, *>=} opt_data')
-            self.writer.writeline(' * @param {goog.string.StringBuffer=} opt_sb')
-            self.writer.writeline(' * @param {Function=} opt_caller')
-            self.writer.writeline(' * @return {string|undefined}')
-            self.writer.writeline(' * @notypecheck')
-            self.writer.writeline(' */')
-
-        body = self.macro_body(name, node, frame)
-        frame.assigned_names.add("%s.%s" %(frame.eval_ctx.namespace, node.name))
+        self.macro_body(name, node, frame)
+        frame.assigned_names.add("%s.%s" % (frame.eval_ctx.namespace,
+                                            node.name))
 
     def visit_CallBlock(self, node, frame):
         # node.call
         # node.body
         # Add the caller function to the macro.
         # XXX - Make sure we don't have a namespace cnoflict here.
-        children = node.iter_child_nodes(exclude = ("call",))
-        self.macro_body(
-            "func_caller", node, frame,
-            children = children, parameter_prefix = "func")
+        children = node.iter_child_nodes(exclude=("call",))
+        self.macro_body("func_caller", node, frame, children=children,
+                        parameter_prefix="func")
 
         # call the macro passing in the caller method
         if self.writer.__class__.__name__ == STRINGBUILDER:
@@ -991,7 +898,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             raise jinja2.compiler.TemplateAssertionError(
                 "Unknown writer class", node.lineno, self.name, self.filename)
 
-        self.visit(node.call, frame, forward_caller = "func_caller")
+        self.visit(node.call, frame, forward_caller="func_caller")
         self.writer.write(";")
 
     def signature(self, node, frame, forward_caller):
@@ -1047,10 +954,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.writer.write(", ")
             self.writer.write(forward_caller)
 
-    def visit_Call(self, node, frame, forward_caller = None):
+    def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
         dotted_name = []
-        self.visit(node.node, frame, dotted_name = dotted_name)
+        self.visit(node.node, frame, dotted_name=dotted_name)
         func_name = ".".join(dotted_name)
 
         # Like signature(), this assumes that function calls with only
@@ -1058,7 +965,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # allows you to call differently named functions in the client JS
         # than when rendering a template on the server.
         if node.args and not node.kwargs \
-               and func_name in getattr(self.environment, "js_func_aliases", []):
+               and func_name in getattr(self.environment, "js_func_aliases",
+                                        []):
             func_name = self.environment.js_func_aliases[func_name]
 
         # function signature
@@ -1093,12 +1001,14 @@ _pre_tag_whitespace = re.compile(r'\s*<')
 _post_tag_whitespace = re.compile(r'>\s*')
 _excess_whitespace = re.compile(r'\s\s+')
 
+
 def strip_html_whitespace(value):
     value = _pre_tag_whitespace.sub('<', value)
     value = _post_tag_whitespace.sub('>', value)
     return _excess_whitespace.sub(' ', value)
 
 FILTERS = {}
+
 
 class register_filter(object):
 
@@ -1112,7 +1022,7 @@ class register_filter(object):
 
 
 @register_filter("default")
-def filter_default(generator, node, frame, default_value = ""):
+def filter_default(generator, node, frame, default_value=""):
     generator.writer.write("(")
     generator.visit(node.node, frame)
     generator.writer.write(" ? ")
@@ -1152,7 +1062,7 @@ def filter_length(generator, node, frame):
 
 
 @register_filter("replace")
-def filter_replace(generator, node, frame, old, new): #, count = None)
+def filter_replace(generator, node, frame, old, new):
     generator.visit(node.node, frame)
     generator.writer.write(".replace(")
     generator.visit(old, frame)
@@ -1162,10 +1072,10 @@ def filter_replace(generator, node, frame, old, new): #, count = None)
 
 
 @register_filter("round")
-def filter_round(generator, node, frame, precision = jinja2.nodes.Const(0)):
+def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
     # get precision
     precision_value = []
-    isparam = generator.visit(precision, frame, precision_value)
+    generator.visit(precision, frame, precision_value)
     precision = ".".join(precision_value)
     try:
         precision = 10 ** int(precision)
@@ -1194,15 +1104,4 @@ def _generate(node, generator):
 def generate(node, environment, name, filename):
     """Generate the python source for a node tree."""
     generator = CodeGenerator(environment, name, filename)
-    generator.writer = environment.writer(environment)
-    return _generate(node, generator)
-
-
-def generateClosure(node, environment, name, filename):
-    generator = ClosureCodeGenerator(environment, name, filename)
-    return _generate(node, generator)
-
-
-def generateConcat(node, environment, name, filename):
-    generator = ConcatCodeGenerator(environment, name, filename)
     return _generate(node, generator)
