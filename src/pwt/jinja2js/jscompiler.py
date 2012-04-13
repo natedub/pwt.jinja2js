@@ -260,6 +260,7 @@ class BaseCodeGenerator(NodeVisitor):
 class CodeGenerator(BaseCodeGenerator):
 
     def __init__(self, environment, name, filename):
+        super(CodeGenerator, self).__init__(environment, name, filename)
         self.writer = Concat()
 
     def visit_Template(self, node):
