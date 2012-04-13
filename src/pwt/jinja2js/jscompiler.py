@@ -57,7 +57,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
     def visit_Macro(self, node):
         self.identifiers.declared_locally.add(
-            ("%s.%s" % (self.ctx.namespace, node.name)).encode("utf-8"))
+            ("%s" % (node.name)).encode("utf-8"))
 
     def visit_Import(self, node):
         # register import target as declare_locally
@@ -195,27 +195,6 @@ class Concat(object):
         self._new_lines = max(self._new_lines, 1 + extra)
         self.mark(node)
 
-    # special methods that we can override to comform to different code styles
-
-    # output formating
-
-    def writeline_provides(self, node, frame, namespace):
-        parts = namespace.split(".")
-        for idx, part in enumerate(parts):
-            ns = ".".join(parts[:idx + 1])
-            self.writeline("if (typeof %s == 'undefined') { %s%s = {}; }"
-                           % (ns, idx == 0 and "var " or "", ns), node)
-
-    def writeline_require(self, node, frame, namespace):
-        self.newline(node)
-        self.write_require(node, frame, namespace)
-
-    def write_require(self, node, frame, namespace):
-        # Users need to manage there own dependency here
-        pass
-
-    # output formating
-
     def writeline_startoutput(self, node, frame):
         self.writeline("var output = '';", node)
 
@@ -289,9 +268,7 @@ class CodeGenerator(BaseCodeGenerator):
         self.blockvisit(node.body, frame)
 
     def visit_Import(self, node, frame):
-        namespace = frame.identifiers.imports[node.target]
         self.writer.mark(node)
-        self.writer.write_require(node, frame, namespace)
 
     def visit_Macro(self, node, frame):
         generator = MacroCodeGenerator(
@@ -552,19 +529,6 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 raise jinja2.compiler.TemplateAssertionError(
                     "Variable '%s' not defined" % name,
                     node.lineno, self.name, self.filename)
-
-            if not dotted_name and frame.eval_ctx.namespace:
-                # For compatibility with regular jinja2 env, when one macro
-                # calls itself or another macro within the same template, it
-                # will not specify the namespace in the macro name. For the
-                # compiled JS we must inject the namespace.
-                top_frame = frame
-                while top_frame.parent:
-                    top_frame = top_frame.parent
-
-                namespaced_name = frame.eval_ctx.namespace + '.' + node.name
-                if namespaced_name in top_frame.identifiers.declared_locally:
-                    name = namespaced_name
 
             output = name
 
@@ -852,12 +816,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     def visit_Macro(self, node, frame):
         name = node.name
-        if frame.eval_ctx.namespace:
-            name = frame.eval_ctx.namespace + "." + name
-
         self.macro_body(name, node, frame)
-        frame.assigned_names.add("%s.%s" % (frame.eval_ctx.namespace,
-                                            node.name))
+        frame.assigned_names.add("%s" % (name))
 
     def visit_CallBlock(self, node, frame):
         # node.call
