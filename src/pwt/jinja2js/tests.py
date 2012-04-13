@@ -1,3 +1,4 @@
+import difflib
 import unittest
 
 from jinja2 import Environment, PackageLoader
@@ -18,6 +19,14 @@ def generateMacro(node, environment, name, filename, autoescape=False):
     eval_ctx.autoescape = autoescape
     generator.blockvisit(node.body, jscompiler.JSFrame(environment, eval_ctx))
     return generator.writer.stream.getvalue()
+
+
+def compare(result, expected):
+    if result != expected:
+        for change in difflib.unified_diff(result.split('\n'),
+                                           expected.split('\n')):
+            print change
+        assert False, "Result and expected do not match"
 
 
 class JSConcatCompilerTemplateTestCase(unittest.TestCase):
@@ -49,13 +58,17 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 {% endmacro %}
 """)
         source_code = generateMacro(node, self.env, "var1.html", "var1.html")
-
-        self.assertEqual(source_code,
-        """hello = function(opt_data, opt_sb, opt_caller) {
+        expected = """hello = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {name: arguments[0]};
     var output = '';
-    output += '\\n' + opt_data.name + '\\n';
+    output += '\\n' + __data.name + '\\n';
     return output;
-};""")
+};"""
+        compare(source_code, expected)
 
     def test_for13(self):
         # XXX - test for loop for conflicting variables. Here we have a
@@ -69,17 +82,23 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        self.assertEqual(source_code,
-        """forinlist = function(opt_data, opt_sb, opt_caller) {
+        expected = """forinlist = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {jobs: arguments[0]};
     var output = '';
-    var jobList = opt_data.jobs;
+    var jobList = __data.jobs;
     var jobListLen = jobList.length;
     for (var jobIndex = 0; jobIndex < jobListLen; jobIndex++) {
         var jobData = jobList[jobIndex];
         output += jobData.name + ' does ' + jobData.name;
     }
     return output;
-};""")
+};"""
+
+        compare(source_code, expected)
 
     def test_call_macro1(self):
         # call macro in same template, without arguments.
@@ -90,44 +109,62 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        self.assertEqual(source_code,
-        """testif = function(opt_data, opt_sb, opt_caller) {
+        expected = """testif = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {option: arguments[0]};
     var output = '';
-    if (opt_data.option) {
-        output += opt_data.option;
+    if (__data.option) {
+        output += __data.option;
     }
     return output;
 };
 
-testcall = function(opt_data, opt_sb, opt_caller) {
+testcall = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
     var output = '';
-    output += testif({});
+    output += testif();
     return output;
-};""")
+};"""
+        compare(source_code, expected)
 
     def test_call_macro3(self):  # Copied from above and modified
         # call macro passing in a argument
         node = self.get_compile_from_string("""{% macro testif(option) -%}
 {% if option %}{{ option }}{% endif %}{% endmacro %}
 
-{% macro testcall() %}{{ testif(option = true) }}{% endmacro %}""")
+{% macro testcall() %}{{ testif(option=true) }}{% endmacro %}""")
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        self.assertEqual(source_code,
-        """testif = function(opt_data, opt_sb, opt_caller) {
+        expected = """testif = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {option: arguments[0]};
     var output = '';
-    if (opt_data.option) {
-        output += opt_data.option;
+    if (__data.option) {
+        output += __data.option;
     }
     return output;
 };
 
-testcall = function(opt_data, opt_sb, opt_caller) {
+testcall = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
     var output = '';
-    output += testif({option: true});
+    output += testif(true);
     return output;
-};""")
+};"""
+        compare(source_code, expected)
 
     def test_callblock1(self):
         node = self.get_compile_from_string("""{% macro render_dialog(type) -%}
@@ -143,23 +180,37 @@ Hello {{ name }}!
 
         source_code = jscompiler.generate(node, self.env, "cb.html", "cb.html")
 
-        self.assertEqual(source_code,
-        """render_dialog = function(opt_data, opt_sb, opt_caller) {
+        expected = """render_dialog = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {type: arguments[0]};
     var output = '';
-    output += '<div class="type">' + opt_caller({}) + '</div>';
+    output += '<div class="type">' + __caller() + '</div>';
     return output;
 };
 
-render = function(opt_data, opt_sb, opt_caller) {
+render = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {name: arguments[0]};
     var output = '';
-    func_caller = function(func_data, func_sb, func_caller) {
+    func_caller = function() {
+        var __arg_len = arguments.length;
+        var __caller = null;
+        if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+            __caller = arguments.pop();
         var output = '';
-        output += 'Hello ' + opt_data.name + '!';
+        output += 'Hello ' + __data.name + '!';
         return output;
     };
-    output += render_dialog({type: 'box'}, null, func_caller);
+    output += render_dialog('box', null, func_caller);
     return output;
-};""")
+};"""
+        compare(source_code, expected)
 
     def test_filter_capitalize(self):
         # different in concat and stringbuilder modes
@@ -168,9 +219,15 @@ render = function(opt_data, opt_sb, opt_caller) {
 
         source_code = generateMacro(node, self.env, "f.html", "f.html")
 
-        self.assertEqual(source_code,
-        """trunc = function(opt_data, opt_sb, opt_caller) {
+        expected = """trunc = function() {
+    var __arg_len = arguments.length;
+    var __caller = null;
+    if(__arg_len > 0 && typeof(arguments[__arg_len - 1]) === 'function')
+        __caller = arguments.pop();
+    var __data = {s: arguments[0]};
     var output = '';
-    output += opt_data.s.substring(0, 1).toUpperCase() + opt_data.s.substring(1);
+    output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
     return output;
-};""")
+};"""
+
+        compare(source_code, expected)

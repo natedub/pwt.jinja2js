@@ -104,9 +104,6 @@ class JSFrame(jinja2.compiler.Frame):
         # Track if we are escaping some output
         self.escaped = False
 
-        # Name of variable prefix containing the variables.
-        self.parameter_prefix = "opt"
-
     def inspect(self, nodes):
         """Walk the node and check for identifiers.  If the scope is hard (eg:
         enforce on a python level) overrides from outer scopes are tracked
@@ -494,19 +491,18 @@ class MacroCodeGenerator(BaseCodeGenerator):
         isparam = False
 
         if name in frame.identifiers.declared_parameter:
-            output = frame.parameter_prefix + "_data." + name
+            output = name
 
             # neccessary?
-            frame.assigned_names.add(frame.parameter_prefix + "_data." + name)
+            frame.assigned_names.add("__data." + name)
             isparam = True
         elif frame.parent is not None and \
                name in frame.parent.identifiers.declared_parameter:
             # Once we have tried any local variables we need to check
             # the parent if we have a declared parameter from there
-            output = frame.parent.parameter_prefix + "_data." + name
+            output = name
 
-            frame.assigned_names.add(
-                frame.parent.parameter_prefix + "_data." + name)
+            frame.assigned_names.add("__data." + name)
 
             isparam = True
         elif name in frame.reassigned_names:
@@ -533,7 +529,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             output = name
 
         if dotted_name is None:
-            self.writer.write(output)
+            self.writer.write("__data.%s" % output)
         else:
             dotted_name.append(output)
 
@@ -727,12 +723,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.writer.outdent()
             self.writer.writeline("}")
 
-    def function_scoping(self, node, frame, parameter_prefix, children=None):
+    def function_scoping(self, node, frame, children=None):
         if children is None:
             children = node.iter_child_nodes()
 
         func_frame = frame.inner()
-        func_frame.parameter_prefix = parameter_prefix
         func_frame.inspect(children)
 
         # variables that are undeclared (accessed before declaration) and
@@ -764,50 +759,29 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # Handle special variables.
         if "caller" in func_frame.identifiers.undeclared:
             func_frame.identifiers.undeclared.discard("caller")
-            func_frame.reassigned_names["caller"] = "opt_caller"
+            func_frame.reassigned_names["caller"] = "__caller"
 
         return func_frame
 
-    def macro_body(self, name, node, frame, children=None,
-                   parameter_prefix="opt"):
-        frame = self.function_scoping(node, frame, children=children,
-                                      parameter_prefix=parameter_prefix)
+    def macro_body(self, name, node, frame, children=None):
+        frame = self.function_scoping(node, frame, children=children)
 
-        self.writer.writeline("%s = function(%s_data, %s_sb, %s_caller) {"
-                              % (name, frame.parameter_prefix,
-                                 frame.parameter_prefix,
-                                 frame.parameter_prefix))
+        self.writer.writeline("%s = function() {" % name)
         self.writer.indent()
-        if node.defaults:
-            # We have defaults to work with. Loop over all the default keys
-            # and set the value in opt_data if it is not already set.
-            self.writer.writeline("var defaults = {")
-            start = True
-            for arg, default in zip(
-                    node.args[-len(node.defaults):], node.defaults):
-                # get arg value.
-                if not start:
-                    self.writer.write(", ")
-                isparam = self.visit(arg, frame, [])
-                assert isparam == True, \
-                       "dosn't make sense, having a non parameter parameter"
-                self.writer.write("%s: " % arg.name)
-                isparam = self.visit(default, frame)
+        self.writer.writeline("var __arg_len = arguments.length;")
+        self.writer.writeline("var __caller = null;")
+        self.writer.writeline("if(__arg_len > 0 &&"
+        " typeof(arguments[__arg_len - 1]) === 'function')")
+        self.writer.writeline("    __caller = arguments.pop();")
 
-                start = False
+        if node.args:
+            self.writer.writeline("var __data = {")
+            js_args = []
+            for i in xrange(len(node.args)):
+                arg = node.args[i]
+                js_args.append("%s: arguments[%d]" % (arg.name, i))
+            self.writer.write(", ".join(js_args))
             self.writer.write("};")
-            self.writer.writeline("for (var key in defaults) {")
-            self.writer.indent()
-            self.writer.writeline(
-                "if (!(key in %s_data)) {" % frame.parameter_prefix)
-            self.writer.indent()
-            self.writer.writeline(
-                "%s_data[key] = defaults[key];" % (
-                    frame.parameter_prefix))
-            self.writer.outdent()
-            self.writer.writeline("}")
-            self.writer.outdent()
-            self.writer.writeline("}")
         self.writer.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
         self.writer.writeline_endoutput(node, frame)
@@ -825,8 +799,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # Add the caller function to the macro.
         # XXX - Make sure we don't have a namespace cnoflict here.
         children = node.iter_child_nodes(exclude=("call",))
-        self.macro_body("func_caller", node, frame, children=children,
-                        parameter_prefix="func")
+        self.macro_body("func_caller", node, frame, children=children)
 
         # call the macro passing in the caller method
         if self.writer.__class__.__name__ == STRINGBUILDER:
@@ -870,20 +843,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # see if that is the case.
 
         start_kw = True
-        self.writer.write("{")
         for kwarg in node.kwargs:
             if not start_kw:
                 self.writer.write(", ")
-            self.writer.write(kwarg.key)
-            self.writer.write(": ")
             self.visit(kwarg.value, frame)
             start_kw = False
-        self.writer.write("}")
-
-        # If we are using the string builder then we generate slightly
-        # different code.
-        if self.writer.__class__.__name__ == STRINGBUILDER:
-            self.writer.write(", output")
 
         if forward_caller is not None:
             if self.writer.__class__.__name__ == CONCAT:
