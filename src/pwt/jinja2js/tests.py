@@ -60,7 +60,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
         source_code = generateMacro(node, self.env, "var1.html", "var1.html")
         expected = """hello = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
     var output = '';
     output += '\\n' + __data.name + '\\n';
@@ -82,7 +82,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         expected = """forinlist = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {jobs: arguments[0]};
     var output = '';
     var jobList = __data.jobs;
@@ -107,7 +107,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         expected = """testif = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
     var output = '';
     if (__data.option) {
@@ -118,7 +118,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
 testcall = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var output = '';
     output += testif();
     return output;
@@ -136,7 +136,7 @@ testcall = function() {
 
         expected = """testif = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
     var output = '';
     if (__data.option) {
@@ -147,7 +147,7 @@ testcall = function() {
 
 testcall = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var output = '';
     output += testif(true);
     return output;
@@ -170,7 +170,7 @@ Hello {{ name }}!
 
         expected = """render_dialog = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {type: arguments[0]};
     var output = '';
     output += '<div class="type">' + __caller() + '</div>';
@@ -179,12 +179,12 @@ Hello {{ name }}!
 
 render = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
     var output = '';
     func_caller = function() {
         var __arg_len = arguments.length;
-        var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+        var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
         var output = '';
         output += 'Hello ' + __data.name + '!';
         return output;
@@ -203,7 +203,7 @@ render = function() {
 
         expected = """trunc = function() {
     var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
     var output = '';
     output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
