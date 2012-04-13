@@ -7,8 +7,6 @@ import jinja2.nodes
 import jinja2.compiler
 from jinja2.utils import escape
 
-import nodes
-
 
 BINOPERATORS = {
     "and": "&&",
@@ -64,26 +62,6 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
     def visit_Import(self, node):
         # register import target as declare_locally
         super(JSFrameIdentifierVisitor, self).visit_Import(node)
-
-        # Need to find namespace
-        name = node.template.value
-        source, filename, uptodate = self.environment.loader.get_source(
-            self.environment, name)
-        fromnode = self.environment._parse(source, name, filename)
-
-        # Need to find the namespace
-        namespace = list(fromnode.find_all(nodes.NamespaceNode))
-        if len(namespace) != 1:
-            raise jinja2.compiler.TemplateAssertionError(
-                "You must supply one namespace for your template",
-                0,
-                name,
-                filename)
-        namespace = namespace[0].namespace
-
-        self.identifiers.imports[node.target] = namespace.encode("utf-8")
-
-        # Need to find all the macros defined in this namespace
 
     # def visit_FromImport(self, node):
 
