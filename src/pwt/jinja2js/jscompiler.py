@@ -769,10 +769,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writer.writeline("%s = function() {" % name)
         self.writer.indent()
         self.writer.writeline("var __arg_len = arguments.length;")
-        self.writer.writeline("var __caller = null;")
-        self.writer.writeline("if(__arg_len > 0 &&"
-        " typeof(arguments[__arg_len - 1]) === 'function')")
-        self.writer.writeline("    __caller = arguments.pop();")
+        self.writer.writeline("var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? __caller = arguments.pop() : null;")
 
         if node.args:
             self.writer.writeline("var __data = {")
