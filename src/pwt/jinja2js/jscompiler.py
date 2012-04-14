@@ -915,6 +915,12 @@ class register_filter(object):
         return func
 
 
+@register_filter("string")
+def filter_string(generator, node, frame):
+    generator.writer.write("'' + ")
+    generator.visit(node.name, frame)
+
+
 @register_filter("default")
 def filter_default(generator, node, frame, default_value=""):
     generator.writer.write("(")
