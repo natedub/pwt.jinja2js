@@ -490,36 +490,30 @@ class MacroCodeGenerator(BaseCodeGenerator):
         name = node.name
         isparam = False
 
-        if name in frame.identifiers.declared_parameter:
-            output = name
-
-            # neccessary?
-            frame.assigned_names.add("__data." + name)
+        ids = frame.identifiers
+        if name in ids.declared_parameter or name in ids.outer_undeclared:
+            output = "__data." + name
             isparam = True
         elif frame.parent is not None and \
                name in frame.parent.identifiers.declared_parameter:
             # Once we have tried any local variables we need to check
             # the parent if we have a declared parameter from there
-            output = name
-
-            frame.assigned_names.add("__data." + name)
+            output = '__data.' + name
 
             isparam = True
         elif name in frame.reassigned_names:
             output = frame.reassigned_names[name]
 
-            frame.assigned_names.add(name)  # neccessary?
             isparam = True
         elif name in frame.identifiers.declared or \
                  name in frame.identifiers.declared_locally:
             output = name
 
-            frame.assigned_names.add(name)  # neccessary?
-        elif name in frame.identifiers.imports:
+        elif name in ids.imports:
             # This is an import.
-            output = frame.identifiers.imports[name]
+            output = ids.imports[name]
 
-            frame.assigned_names.add(frame.identifiers.imports[name])
+            frame.assigned_names.add(ids.imports[name])
         else:
             if dotted_name is None:
                 raise jinja2.compiler.TemplateAssertionError(
@@ -529,7 +523,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             output = name
 
         if dotted_name is None:
-            self.writer.write("__data.%s" % output)
+            self.writer.write(output)
         else:
             dotted_name.append(output)
 

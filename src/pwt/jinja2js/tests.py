@@ -68,6 +68,22 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 };"""
         compare(source_code, expected)
 
+    def test_var2(self):
+        node = self.get_compile_from_string("""{% macro hello(person) %}
+{{ person.name }}
+{% endmacro %}
+""")
+        source_code = generateMacro(node, self.env, "var1.html", "var1.html")
+        expected = """hello = function() {
+    var __arg_len = arguments.length;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
+    var __data = {person: arguments[0]};
+    var output = '';
+    output += '\\n' + __data.person.name + '\\n';
+    return output;
+};"""
+        compare(source_code, expected)
+
     def test_for13(self):
         # XXX - test for loop for conflicting variables. Here we have a
         # namespaced variable that gets required but conflicts with the
