@@ -227,3 +227,21 @@ render = function() {
 };"""
 
         compare(source_code, expected)
+
+    def test_filter_string(self):
+        # different in concat and stringbuilder modes
+        node = self.get_compile_from_string(
+            """{% macro trunc(s) %}{{ s|string }}{% endmacro %}""")
+
+        source_code = generateMacro(node, self.env, "f.html", "f.html")
+
+        expected = """trunc = function() {
+    var __arg_len = arguments.length;
+    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
+    var __data = {s: arguments[0]};
+    var output = '';
+    output += '' + __data.s;
+    return output;
+};"""
+
+        compare(source_code, expected)

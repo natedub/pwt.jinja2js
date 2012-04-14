@@ -918,7 +918,7 @@ class register_filter(object):
 @register_filter("string")
 def filter_string(generator, node, frame):
     generator.writer.write("'' + ")
-    generator.visit(node.name, frame)
+    generator.visit(node.node, frame)
 
 
 @register_filter("default")
