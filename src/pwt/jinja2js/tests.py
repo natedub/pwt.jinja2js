@@ -62,9 +62,9 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
-    var output = '';
-    output += '\\n' + __data.name + '\\n';
-    return output;
+    var __output = '';
+    __output += '\\n' + __data.name + '\\n';
+    return __output;
 };"""
         compare(source_code, expected)
 
@@ -78,9 +78,9 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {person: arguments[0]};
-    var output = '';
-    output += '\\n' + __data.person.name + '\\n';
-    return output;
+    var __output = '';
+    __output += '\\n' + __data.person.name + '\\n';
+    return __output;
 };"""
         compare(source_code, expected)
 
@@ -100,14 +100,14 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {jobs: arguments[0]};
-    var output = '';
+    var __output = '';
     var jobList = __data.jobs;
     var jobListLen = jobList.length;
     for (var jobIndex = 0; jobIndex < jobListLen; jobIndex++) {
         var jobData = jobList[jobIndex];
-        output += jobData.name + ' does ' + jobData.name;
+        __output += jobData.name + ' does ' + jobData.name;
     }
-    return output;
+    return __output;
 };"""
 
         compare(source_code, expected)
@@ -125,19 +125,19 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
-    var output = '';
+    var __output = '';
     if (__data.option) {
-        output += __data.option;
+        __output += __data.option;
     }
-    return output;
+    return __output;
 };
 
 testcall = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var output = '';
-    output += testif();
-    return output;
+    var __output = '';
+    __output += testif();
+    return __output;
 };"""
         compare(source_code, expected)
 
@@ -154,19 +154,19 @@ testcall = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
-    var output = '';
+    var __output = '';
     if (__data.option) {
-        output += __data.option;
+        __output += __data.option;
     }
-    return output;
+    return __output;
 };
 
 testcall = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var output = '';
-    output += testif(true);
-    return output;
+    var __output = '';
+    __output += testif(true);
+    return __output;
 };"""
         compare(source_code, expected)
 
@@ -188,25 +188,25 @@ Hello {{ name }}!
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {type: arguments[0]};
-    var output = '';
-    output += '<div class="type">' + __caller() + '</div>';
-    return output;
+    var __output = '';
+    __output += '<div class="type">' + __caller() + '</div>';
+    return __output;
 };
 
 render = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
-    var output = '';
+    var __output = '';
     func_caller = function() {
         var __arg_len = arguments.length;
         var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-        var output = '';
-        output += 'Hello ' + __data.name + '!';
-        return output;
+        var __output = '';
+        __output += 'Hello ' + __data.name + '!';
+        return __output;
     };
-    output += render_dialog('box', null, func_caller);
-    return output;
+    __output += render_dialog('box', null, func_caller);
+    return __output;
 };"""
         compare(source_code, expected)
 
@@ -221,9 +221,9 @@ render = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
-    var output = '';
-    output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
-    return output;
+    var __output = '';
+    __output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
+    return __output;
 };"""
 
         compare(source_code, expected)
@@ -239,9 +239,9 @@ render = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
-    var output = '';
-    output += '' + __data.s;
-    return output;
+    var __output = '';
+    __output += '' + __data.s;
+    return __output;
 };"""
 
         compare(source_code, expected)

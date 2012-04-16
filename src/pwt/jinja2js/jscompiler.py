@@ -193,13 +193,13 @@ class Concat(object):
         self.mark(node)
 
     def writeline_startoutput(self, node, frame):
-        self.writeline("var output = '';", node)
+        self.writeline("var __output = '';", node)
 
     def writeline_endoutput(self, node, frame):
-        self.writeline("return output;", node)
+        self.writeline("return __output;", node)
 
     def writeline_outputappend(self, node, frame):
-        self.writeline("output += ", node)
+        self.writeline("__output += ", node)
 
     def write_outputappend_add(self, node, frame):
         self.write(" + ")
