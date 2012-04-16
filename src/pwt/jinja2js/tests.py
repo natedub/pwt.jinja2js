@@ -11,15 +11,7 @@ import jinja2.environment
 import jscompiler
 
 
-def generateMacro(node, environment, name, filename,
-                  autoescape=False, namespace='testNS'):
-    # Need to test when we are not using an Environment from jinja2js
-    generator = jscompiler.MacroCodeGenerator(environment, jscompiler.Concat(),
-                                              namespace, None, None)
-    eval_ctx = jinja2.nodes.EvalContext(environment, name)
-    eval_ctx.autoescape = autoescape
-    generator.blockvisit(node.body, jscompiler.JSFrame(environment, eval_ctx))
-    return generator.writer.stream.getvalue()
+env = Environment(loader=PackageLoader('pwt.jinja2js', 'test_templates'))
 
 
 def compare(result, expected):
@@ -33,15 +25,13 @@ def compare(result, expected):
 class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
     def get_compile_from_string(self, source, name=None, filename=None):
-        node = self.env._parse(source, name, filename)
-        # node = jinja2.optimizer.optimize(node, self.env)
+        node = env._parse(source, name, filename)
+        # node = jinja2.optimizer.optimize(node, env)
 
         return node
 
     def setUp(self):
         super(JSConcatCompilerTemplateTestCase, self).setUp()
-        self.env = Environment(loader=PackageLoader('pwt.jinja2js',
-                                                    'test_templates'))
 
     def test_undeclared_var1(self):
         # variable is undeclared
@@ -51,15 +41,17 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 """)
         self.assertRaises(
             jinja2.compiler.TemplateAssertionError,
-            generateMacro, node, self.env, "var1.html", "var1.html")
+            jscompiler.generate, node, env, "var1.html", "var1.html")
 
     def test_var1(self):
         node = self.get_compile_from_string("""{% macro hello(name) %}
 {{ name }}
 {% endmacro %}
 """)
-        source_code = generateMacro(node, self.env, "var1.html", "var1.html")
-        expected = """testNS.hello = function() {
+        source_code = jscompiler.generate(node, env, "var1.html", "var1.html")
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.hello = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
@@ -74,8 +66,10 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 {{ person.name }}
 {% endmacro %}
 """)
-        source_code = generateMacro(node, self.env, "var1.html", "var1.html")
-        expected = """testNS.hello = function() {
+        source_code = jscompiler.generate(node, env, "var1.html", "var1.html")
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.hello = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {person: arguments[0]};
@@ -95,7 +89,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 {% for job in jobs %}{{ job.name }} does {{ jobData.name }}{% endfor %}
 {%- endmacro %}""")
 
-        source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
+        source_code = jscompiler.generate(node, env, "f.html", "f.html")
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -122,7 +116,7 @@ jinja2js.forinlist = function() {
 
 {% macro testcall() %}{{ testif() }}{% endmacro %}""")
 
-        source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
+        source_code = jscompiler.generate(node, env, "f.html", "f.html")
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -153,7 +147,7 @@ jinja2js.testcall = function() {
 
 {% macro testcall() %}{{ testif(option=true) }}{% endmacro %}""")
 
-        source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
+        source_code = jscompiler.generate(node, env, "f.html", "f.html")
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -189,7 +183,7 @@ Hello {{ name }}!
 {%- endmacro %}
 """)
 
-        source_code = jscompiler.generate(node, self.env, "cb.html", "cb.html")
+        source_code = jscompiler.generate(node, env, "cb.html", "cb.html")
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -222,9 +216,11 @@ jinja2js.render = function() {
         node = self.get_compile_from_string(
             """{% macro trunc(s) %}{{ s|capitalize }}{% endmacro %}""")
 
-        source_code = generateMacro(node, self.env, "f.html", "f.html")
+        source_code = jscompiler.generate(node, env, "f.html", "f.html")
 
-        expected = """testNS.trunc = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.trunc = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
@@ -240,9 +236,11 @@ jinja2js.render = function() {
         node = self.get_compile_from_string(
             """{% macro trunc(s) %}{{ s|string }}{% endmacro %}""")
 
-        source_code = generateMacro(node, self.env, "f.html", "f.html")
+        source_code = jscompiler.generate(node, env, "f.html", "f.html")
 
-        expected = """testNS.trunc = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.trunc = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};

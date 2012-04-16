@@ -120,9 +120,15 @@ class JSFrame(jinja2.compiler.Frame):
         return frame
 
 
-class Concat(object):
+class BaseCodeGenerator(NodeVisitor):
 
-    def __init__(self, environment=None):
+    def __init__(self, environment, name, filename):
+        super(BaseCodeGenerator, self).__init__()
+
+        self.environment = environment
+        self.name = name
+        self.filename = filename
+
         self.stream = StringIO()
 
         # the current line number
@@ -147,17 +153,14 @@ class Concat(object):
         # the character(s) to display as a single indent
         self._indentation_text = getattr(environment, 'js_indentation', '    ')
 
-    # Copied
     def indent(self):
         """Indent by one."""
         self._indentation += 1
 
-    # Copied
     def outdent(self, step=1):
         """Outdent by step."""
         self._indentation -= step
 
-    # Modified
     def write(self, x, node=None):
         """Write a string into the output stream."""
         self.mark(node)
@@ -174,7 +177,6 @@ class Concat(object):
             self._new_lines = 0
         self.stream.write(x)
 
-    # Copied
     def writeline(self, x, node=None, extra=0):
         """Combination of newline and write."""
         self.newline(node, extra)
@@ -186,7 +188,6 @@ class Concat(object):
             self._write_debug_info = node.lineno
             self._last_line = node.lineno
 
-    # Modified
     def newline(self, node=None, extra=0):
         """Add one or more newlines before the next write."""
         self._new_lines = max(self._new_lines, 1 + extra)
@@ -213,16 +214,6 @@ class Concat(object):
     def write_htmlescape_end(self, node, frame):
         self.write(")")
 
-
-class BaseCodeGenerator(NodeVisitor):
-
-    def __init__(self, environment, name, filename):
-        super(BaseCodeGenerator, self).__init__()
-
-        self.environment = environment
-        self.name = name
-        self.filename = filename
-
     def blockvisit(self, nodes, frame):
         """
         Visit a list of noes ad block in a frame. Some times we want to
@@ -237,7 +228,6 @@ class CodeGenerator(BaseCodeGenerator):
 
     def __init__(self, environment, name, filename, namespace="jinja2js"):
         super(CodeGenerator, self).__init__(environment, name, filename)
-        self.writer = Concat()
         self.namespace = namespace
 
     def visit_Template(self, node):
@@ -263,29 +253,22 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writer.writeline("if(typeof %s == 'undefined') {var %s = {};}\n\n"
+        self.writeline("if(typeof %s == 'undefined') {var %s = {};}\n\n"
                               % (self.namespace, self.namespace))
         self.blockvisit(node.body, frame)
 
     def visit_Import(self, node, frame):
-        self.writer.mark(node)
+        self.mark(node)
 
     def visit_Macro(self, node, frame):
-        generator = MacroCodeGenerator(self.environment,
-                                       self.writer.__class__(self.environment),
+        generator = MacroCodeGenerator(self.environment, self.stream,
                                        self.namespace, self.name,
                                        self.filename)
         generator.visit(node, frame)
 
-        self.writer.write(generator.writer.stream.getvalue())
-
     def visit_TemplateData(self, node, frame):
-        self.writer.mark(node)
-        self.writer.write(node.data)
-
-
-STRINGBUILDER = "StringBuilder"
-CONCAT = "Concat"
+        self.mark(node)
+        self.write(node.data)
 
 
 class MacroCodeGenerator(BaseCodeGenerator):
@@ -297,10 +280,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
     # templates, comments should be displayed in the JS file. We need them for
     # any closure compiler hints we may want to put in.
 
-    def __init__(self, environment, writer, namespace, name, filename):
+    def __init__(self, environment, stream, namespace, name, filename):
         super(MacroCodeGenerator, self).__init__(environment, name, filename)
 
-        self.writer = writer
+        self.stream = stream
         self.namespace = namespace
 
     def visit_Output(self, node, frame):
@@ -347,36 +330,20 @@ class MacroCodeGenerator(BaseCodeGenerator):
         for item in body:
             if isinstance(item, list):
                 if start:
-                    self.writer.writeline_outputappend(node, frame)
+                    self.writeline_outputappend(node, frame)
                     start = False
                 else:
-                    self.writer.write_outputappend_add(node, frame)
+                    self.write_outputappend_add(node, frame)
                 if getattr(self.environment, "strip_html_whitespace", False):
                     item = [strip_html_whitespace(itemhtml)
                             for itemhtml in item]
-                self.writer.write(repr("".join(item)))
+                self.write(repr("".join(item)))
             else:
-                # This is a non-data node.
-                # If we are using the string builder then we generate slightly
-                # different code then concat.
-                if self.writer.__class__.__name__ == STRINGBUILDER:
-                    if isinstance(item, jinja2.nodes.Call):
-                        # XXX - If we are a macro then we must end the
-                        # appending of the output.
-                        if not item.args:
-                            if not start:
-                                self.writer.write_outputappend_end(item, frame)
-                                start = True
-                            self.writer.newline(item)
-                            self.visit(item, frame)
-                            self.writer.write(";")
-                            continue
-
                 if start:
-                    self.writer.writeline_outputappend(item, frame)
+                    self.writeline_outputappend(item, frame)
                     start = False
                 else:
-                    self.writer.write_outputappend_add(item, frame)
+                    self.write_outputappend_add(item, frame)
 
                 # autoescape, safe, and escape
                 if isinstance(item, jinja2.nodes.Filter):
@@ -385,18 +352,18 @@ class MacroCodeGenerator(BaseCodeGenerator):
                         continue
 
                 if frame.eval_ctx.autoescape:
-                    self.writer.write_htmlescape(node, frame)
+                    self.write_htmlescape(node, frame)
                     escaped_frame = frame.soft()
                     escaped_frame.escaped = True
 
                     self.visit(item, escaped_frame)
 
-                    self.writer.write_htmlescape_end(node, frame)
+                    self.write_htmlescape_end(node, frame)
                 else:
                     self.visit(item, frame)
 
         if not start:
-            self.writer.write_outputappend_end(node, frame)
+            self.write_outputappend_end(node, frame)
 
     def visit_Filter(self, node, frame):
         # safe attribute with autoesacape is handled in visit_Output
@@ -405,11 +372,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 raise Exception("No kwargs")
 
             if not frame.escaped:
-                self.writer.write_htmlescape(node, frame)
+                self.write_htmlescape(node, frame)
                 frame = frame.soft()
                 frame.escaped = True
                 self.visit(node.node, frame)
-                self.writer.write_htmlescape_end(node, frame)
+                self.write_htmlescape_end(node, frame)
             else:
                 self.visit(node.node, frame)
         elif node.name in FILTERS:
@@ -436,25 +403,25 @@ class MacroCodeGenerator(BaseCodeGenerator):
             output = repr(val)
 
         if dotted_name is None:
-            self.writer.write(output)
+            self.write(output)
         else:
             dotted_name.append(output)
 
         return False
 
     def visit_List(self, node, frame):
-        self.writer.write("[")
+        self.write("[")
         for idx, item in enumerate(node.items):
             if idx:
-                self.writer.write(", ")
+                self.write(", ")
             self.visit(item, frame)
-        self.writer.write("]")
+        self.write("]")
 
     def visit_Dict(self, node, frame):
-        self.writer.write("{")
+        self.write("{")
         for idx, item in enumerate(node.items):
             if idx:
-                self.writer.write(", ")
+                self.write(", ")
 
             # item.key should be a constant string. Otherwise how do you
             # get to output a dictionary with a variable key string?
@@ -465,18 +432,18 @@ class MacroCodeGenerator(BaseCodeGenerator):
                         "My templates get confused when you try and create a"
                         " dictionary with a key with a dot in it.",
                         item.key.lineno, self.name, self.filename)
-                self.writer.write(item.key.value)
+                self.write(item.key.value)
             elif isinstance(item.key, jinja2.nodes.Name):
-                self.writer.write(item.key.name)
+                self.write(item.key.name)
             else:
                 raise jinja2.compiler.TemplateAssertionError(
                     "Dictionary keys must be constant.",
                     item.key.lineno, self.name, self.filename)
 
-            self.writer.write(": ")
+            self.write(": ")
             self.visit(item.value, frame)
 
-        self.writer.write("}")
+        self.write("}")
 
     def visit_Name(self, node, frame, dotted_name=None):
         # declared_parameter
@@ -522,7 +489,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             output = name
 
         if dotted_name is None:
-            self.writer.write(output)
+            self.write(output)
         else:
             dotted_name.append(output)
 
@@ -532,9 +499,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # Careful, there is something in Jinja2 about node.arg extending
         # jinja2.nodes.Slice
         self.visit(node.node, frame)
-        self.writer.write("[")
+        self.write("[")
         self.visit(node.arg, frame)
-        self.writer.write("]")
+        self.write("]")
 
     def visit_Getattr(self, node, frame, dotted_name=None):
         # We only need to check when `loop` is the first name-space in the
@@ -542,25 +509,25 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # we are inside a for loop, likely when we are calling other macros.
         if frame.forloop_buffer and getattr(node.node, "name", None) == "loop":
             if node.attr == "index0":
-                self.writer.write("%sIndex" % frame.forloop_buffer)
+                self.write("%sIndex" % frame.forloop_buffer)
             elif node.attr == "index":
-                self.writer.write("%sIndex + 1" % frame.forloop_buffer)
+                self.write("%sIndex + 1" % frame.forloop_buffer)
             elif node.attr == "revindex0":
-                self.writer.write("%sListLen - %sIndex"
+                self.write("%sListLen - %sIndex"
                                   % (frame.forloop_buffer,
                                      frame.forloop_buffer))
             elif node.attr == "revindex":
-                self.writer.write("%sListLen - %sIndex - 1"
+                self.write("%sListLen - %sIndex - 1"
                                   % (frame.forloop_buffer,
                                      frame.forloop_buffer))
             elif node.attr == "first":
-                self.writer.write("%sIndex == 0" % frame.forloop_buffer)
+                self.write("%sIndex == 0" % frame.forloop_buffer)
             elif node.attr == "last":
-                self.writer.write("%sIndex == (%sListLen - 1)"
+                self.write("%sIndex == (%sListLen - 1)"
                                   % (frame.forloop_buffer,
                                      frame.forloop_buffer))
             elif node.attr == "length":
-                self.writer.write("%sListLen" % frame.forloop_buffer)
+                self.write("%sListLen" % frame.forloop_buffer)
             else:
                 raise AttributeError("loop.%s not defined" % node.attr)
         else:
@@ -577,15 +544,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
             dotted_name.append(node.attr)
 
             if write_variable:
-                self.writer.write(".".join(dotted_name))
+                self.write(".".join(dotted_name))
 
     def binop(operator):
         def visitor(self, node, frame):
-            self.writer.write("(")
+            self.write("(")
             self.visit(node.left, frame)
-            self.writer.write(" %s " % BINOPERATORS.get(operator, operator))
+            self.write(" %s " % BINOPERATORS.get(operator, operator))
             self.visit(node.right, frame)
-            self.writer.write(")")
+            self.write(")")
         return visitor
 
     # Math operators
@@ -595,18 +562,18 @@ class MacroCodeGenerator(BaseCodeGenerator):
     visit_Div = binop("/")
 
     def visit_FloorDiv(self, node, frame):
-        self.writer.write("Math.floor(")
+        self.write("Math.floor(")
         self.visit(node.left, frame)
-        self.writer.write(" / ")
+        self.write(" / ")
         self.visit(node.right, frame)
-        self.writer.write(")")
+        self.write(")")
 
     def visit_Pow(self, node, frame):
-        self.writer.write("Math.pow(")
+        self.write("Math.pow(")
         self.visit(node.left, frame)
-        self.writer.write(", ")
+        self.write(", ")
         self.visit(node.right, frame)
-        self.writer.write(")")
+        self.write(")")
 
     visit_Mod = binop("%")
     visit_And = binop("and")
@@ -614,9 +581,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     def uaop(operator):
         def visitor(self, node, frame):
-            self.writer.write("(" + UNARYOP.get(operator, operator))
+            self.write("(" + UNARYOP.get(operator, operator))
             self.visit(node.node, frame)
-            self.writer.write(")")
+            self.write(")")
         return visitor
 
     visit_Pos = uaop("+")
@@ -639,26 +606,26 @@ class MacroCodeGenerator(BaseCodeGenerator):
             raise jinja2.compiler.TemplateAssertionError(
                 "Comparison operator '%s' not supported in JavaScript",
                 node.lineno, self.name, self.filename)
-        self.writer.write(" %s " % OPERATORS[node.op])
+        self.write(" %s " % OPERATORS[node.op])
         self.visit(node.expr, frame)
 
     def visit_If(self, node, frame):
         if_frame = frame.soft()
-        self.writer.writeline("if (", node)
+        self.writeline("if (", node)
         self.visit(node.test, if_frame)
-        self.writer.write(") {")
+        self.write(") {")
 
-        self.writer.indent()
+        self.indent()
         self.blockvisit(node.body, if_frame)
-        self.writer.outdent()
+        self.outdent()
 
         if node.else_:
-            self.writer.writeline("} else {")
-            self.writer.indent()
+            self.writeline("} else {")
+            self.indent()
             self.blockvisit(node.else_, if_frame)
-            self.writer.outdent()
+            self.outdent()
 
-        self.writer.writeline("}")
+        self.writeline("}")
 
     def visit_For(self, node, frame):
         node.iter_child_nodes(exclude=("iter",))
@@ -685,36 +652,36 @@ class MacroCodeGenerator(BaseCodeGenerator):
                     "Can't assign to special loop variable in for-loop target",
                     name.lineno, self.name, self.filename)
 
-        self.writer.writeline("var %sList = " % node.target.name)
+        self.writeline("var %sList = " % node.target.name)
         self.visit(node.iter, loop_frame)
-        self.writer.write(";")
+        self.write(";")
 
-        self.writer.writeline("var %(name)sListLen = %(name)sList.length;"
-                              % {"name": node.target.name})
+        self.writeline("var %(name)sListLen = %(name)sList.length;"
+                       % {"name": node.target.name})
         if node.else_:
-            self.writer.writeline("if (%sListLen > 0) {" % node.target.name)
-            self.writer.indent()
+            self.writeline("if (%sListLen > 0) {" % node.target.name)
+            self.indent()
 
-        self.writer.writeline("for (var %(name)sIndex = 0; %(name)sIndex <"
-                              " %(name)sListLen; %(name)sIndex++) {"
-                              % {"name": node.target.name})
-        self.writer.indent()
+        self.writeline("for (var %(name)sIndex = 0; %(name)sIndex <"
+                       " %(name)sListLen; %(name)sIndex++) {"
+                       % {"name": node.target.name})
+        self.indent()
 
-        self.writer.writeline("var %(name)sData = %(name)sList[%(name)sIndex];"
+        self.writeline("var %(name)sData = %(name)sList[%(name)sIndex];"
                               % {"name": node.target.name})
         loop_frame.reassigned_names[node.target.name] =\
                 "%sData" % node.target.name
         self.blockvisit(node.body, loop_frame)
-        self.writer.outdent()
-        self.writer.writeline("}")
+        self.outdent()
+        self.writeline("}")
 
         if node.else_:
-            self.writer.outdent()
-            self.writer.writeline("} else {")
-            self.writer.indent()
+            self.outdent()
+            self.writeline("} else {")
+            self.indent()
             self.blockvisit(node.else_, frame)
-            self.writer.outdent()
-            self.writer.writeline("}")
+            self.outdent()
+            self.writeline("}")
 
     def function_scoping(self, node, frame, children=None):
         if children is None:
@@ -759,33 +726,35 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writer.writeline("%s.%s = function() {" % (self.namespace, name))
-        self.writer.indent()
-        self.writer.writeline("var __arg_len = arguments.length;")
-        self.writer.writeline("var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;")
+        self.writeline("%s.%s = function() {" % (self.namespace, name))
+        self.indent()
+        self.writeline("var __arg_len = arguments.length;")
+        self.writeline("var __caller = __arg_len > 0 && "
+                       "typeof(arguments[__arg_len-1]) === 'function' ? "
+                       "arguments.pop() : null;")
 
         if node.args:
-            self.writer.writeline("var __data = {")
+            self.writeline("var __data = {")
             js_args = []
             for i in xrange(len(node.args)):
                 arg = node.args[i]
                 js_args.append("%s: arguments[%d]" % (arg.name, i))
-            self.writer.write(", ".join(js_args))
-            self.writer.write("};")
-        self.writer.writeline_startoutput(node, frame)
+            self.write(", ".join(js_args))
+            self.write("};")
+        self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
-        self.writer.writeline_endoutput(node, frame)
-        self.writer.outdent()
-        self.writer.writeline("};")
+        self.writeline_endoutput(node, frame)
+        self.outdent()
+        self.writeline("};")
 
     def caller_body(self, name, node, frame, children):
-        self.writer.writeline("%s = function() {" % name)
-        self.writer.indent()
-        self.writer.writeline_startoutput(node, frame)
+        self.writeline("%s = function() {" % name)
+        self.indent()
+        self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
-        self.writer.writeline_endoutput(node, frame)
-        self.writer.outdent()
-        self.writer.writeline("};")
+        self.writeline_endoutput(node, frame)
+        self.outdent()
+        self.writeline("};")
 
     def visit_Macro(self, node, frame):
         name = node.name
@@ -801,17 +770,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.caller_body("func_caller", node, frame, children=children)
 
         # call the macro passing in the caller method
-        if self.writer.__class__.__name__ == STRINGBUILDER:
-            self.writer.newline(node)
-        elif self.writer.__class__.__name__ == CONCAT:
-            self.writer.writeline_outputappend(node, frame)
-        else:
-            # XXX - we shouldn't get here
-            raise jinja2.compiler.TemplateAssertionError(
-                "Unknown writer class", node.lineno, self.name, self.filename)
+        self.writeline_outputappend(node, frame)
 
         self.visit(node.call, frame, forward_caller="func_caller")
-        self.writer.write(";")
+        self.write(";")
 
     def signature(self, node, frame, forward_caller):
         if node.args and node.kwargs:
@@ -830,7 +792,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             start_arg = True
             for arg in node.args:
                 if not start_arg:
-                    self.writer.write(", ")
+                    self.write(", ")
                 self.visit(arg, frame)
                 start_arg = False
 
@@ -844,18 +806,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
         start_kw = True
         for kwarg in node.kwargs:
             if not start_kw:
-                self.writer.write(", ")
+                self.write(", ")
             self.visit(kwarg.value, frame)
             start_kw = False
 
         if forward_caller is not None:
-            if self.writer.__class__.__name__ == CONCAT:
-                # XXX - This is a hack to get around inconsistencies
-                # between the two different styles.
-                self.writer.write(", null")
+            self.write(", null")
 
-            self.writer.write(", ")
-            self.writer.write(forward_caller)
+            self.write(", ")
+            self.write(forward_caller)
 
     def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
@@ -873,23 +832,23 @@ class MacroCodeGenerator(BaseCodeGenerator):
             func_name = self.environment.js_func_aliases[func_name]
 
         # function signature
-        self.writer.write("%s(" % func_name)
+        self.write("%s(" % func_name)
         self.signature(node, frame, forward_caller)
-        self.writer.write(")")
+        self.write(")")
 
     def visit_Assign(self, node, frame):
         # XXX - test that we don't override any variable names doing this
-        self.writer.newline(node)
+        self.newline(node)
         self.visit(node.target, frame)
-        self.writer.write(" = ")
+        self.write(" = ")
         self.visit(node.node, frame)
-        self.writer.write(";")
+        self.write(";")
 
     def visit_CondExpr(self, node, frame):
         self.visit(node.test, frame)
-        self.writer.write(' ? ')
+        self.write(' ? ')
         self.visit(node.expr1, frame)
-        self.writer.write(' : ')
+        self.write(' : ')
         # XXX - should this allow undefined else clauses? it's tough to
         #       really judge what the correct behaviour should be, but
         #       I have chosen an empty string since it is falsy and won't
@@ -897,7 +856,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if node.expr2:
             self.visit(node.expr2, frame)
         else:
-            self.writer.write("''")
+            self.write("''")
 
 _pre_tag_whitespace = re.compile(r'\s*<')
 _post_tag_whitespace = re.compile(r'>\s*')
@@ -925,58 +884,58 @@ class register_filter(object):
 
 @register_filter("string")
 def filter_string(generator, node, frame):
-    generator.writer.write("'' + ")
+    generator.write("'' + ")
     generator.visit(node.node, frame)
 
 
 @register_filter("default")
 def filter_default(generator, node, frame, default_value=""):
-    generator.writer.write("(")
+    generator.write("(")
     generator.visit(node.node, frame)
-    generator.writer.write(" ? ")
+    generator.write(" ? ")
     generator.visit(node.node, frame)
-    generator.writer.write(" : ")
+    generator.write(" : ")
     generator.visit(default_value, frame)
-    generator.writer.write(")")
+    generator.write(")")
 
 
 @register_filter("truncate")
 def filter_truncate(generator, node, frame, length):
     generator.visit(node.node, frame)
-    generator.writer.write(".substring(0, ")
+    generator.write(".substring(0, ")
     generator.visit(length, frame)
-    generator.writer.write(")")
+    generator.write(")")
 
 
 @register_filter("capitalize")
 def filter_capitalize(generator, node, frame):
     generator.visit(node.node, frame)
-    generator.writer.write(".substring(0, 1).toUpperCase()")
-    generator.writer.write_outputappend_add(node, frame)
+    generator.write(".substring(0, 1).toUpperCase()")
+    generator.write_outputappend_add(node, frame)
     generator.visit(node.node, frame)
-    generator.writer.write(".substring(1)")
+    generator.write(".substring(1)")
 
 
 @register_filter("last")
 def filter_last(generator, node, frame):
     generator.visit(node.node, frame)
-    generator.writer.write(".pop()")
+    generator.write(".pop()")
 
 
 @register_filter("length")
 def filter_length(generator, node, frame):
     generator.visit(node.node, frame)
-    generator.writer.write(".length")
+    generator.write(".length")
 
 
 @register_filter("replace")
 def filter_replace(generator, node, frame, old, new):
     generator.visit(node.node, frame)
-    generator.writer.write(".replace(")
+    generator.write(".replace(")
     generator.visit(old, frame)
-    generator.writer.write(", ")
+    generator.write(", ")
     generator.visit(new, frame)
-    generator.writer.write(")")
+    generator.write(")")
 
 
 @register_filter("round")
@@ -992,13 +951,13 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
         # of 10
         precision = "Math.pow(10, %s)" % precision
 
-    generator.writer.write("Math.round(")
+    generator.write("Math.round(")
     generator.visit(node.node, frame)
     if precision > 1:
-        generator.writer.write(" * %s" % precision)
-    generator.writer.write(")")
+        generator.write(" * %s" % precision)
+    generator.write(")")
     if precision > 1:
-        generator.writer.write(" / %s" % precision)
+        generator.write(" / %s" % precision)
 
 
 def generate(node, environment, name, filename):
@@ -1009,4 +968,4 @@ def generate(node, environment, name, filename):
 
     generator = CodeGenerator(environment, name, filename)
     generator.visit(node)
-    return generator.writer.stream.getvalue()
+    return generator.stream.getvalue()
