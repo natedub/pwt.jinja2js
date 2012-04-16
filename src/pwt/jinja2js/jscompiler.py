@@ -748,6 +748,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writeline("};")
 
     def caller_body(self, name, node, frame, children):
+        """Caller is a local function and doesn't belong is the general NS"""
         self.writeline("%s = function() {" % name)
         self.indent()
         self.writeline_startoutput(node, frame)

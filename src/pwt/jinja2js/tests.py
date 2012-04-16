@@ -22,33 +22,34 @@ def compare(result, expected):
         assert False, "Result and expected do not match"
 
 
-class JSConcatCompilerTemplateTestCase(unittest.TestCase):
+def compile_from_string(source, name=None, filename=None):
+    node = env._parse(source, name, filename)
+    # node = jinja2.optimizer.optimize(node, env)
 
-    def get_compile_from_string(self, source, name=None, filename=None):
-        node = env._parse(source, name, filename)
-        # node = jinja2.optimizer.optimize(node, env)
+    return node
 
-        return node
 
-    def setUp(self):
-        super(JSConcatCompilerTemplateTestCase, self).setUp()
+def compile_and_compare(source, expected):
+    node = compile_from_string(source)
+    compiled = jscompiler.generate(node, env, None, None)
+    compare(compiled, expected)
+
+
+class JSCompilerTemplateTestCase(unittest.TestCase):
 
     def test_undeclared_var1(self):
         # variable is undeclared
-        node = self.get_compile_from_string("""{% macro hello() %}
-{{ name }}
-{% endmacro %}
-""")
+        node = compile_from_string("{% macro hello() %}{{ name }}"
+                                   "{% endmacro %} ")
         self.assertRaises(
             jinja2.compiler.TemplateAssertionError,
             jscompiler.generate, node, env, "var1.html", "var1.html")
 
     def test_var1(self):
-        node = self.get_compile_from_string("""{% macro hello(name) %}
+        source = """{% macro hello(name) %}
 {{ name }}
 {% endmacro %}
-""")
-        source_code = jscompiler.generate(node, env, "var1.html", "var1.html")
+"""
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.hello = function() {
@@ -59,14 +60,13 @@ jinja2js.hello = function() {
     __output += '\\n' + __data.name + '\\n';
     return __output;
 };"""
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_var2(self):
-        node = self.get_compile_from_string("""{% macro hello(person) %}
+        source = """{% macro hello(person) %}
 {{ person.name }}
 {% endmacro %}
-""")
-        source_code = jscompiler.generate(node, env, "var1.html", "var1.html")
+"""
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.hello = function() {
@@ -77,19 +77,16 @@ jinja2js.hello = function() {
     __output += '\\n' + __data.person.name + '\\n';
     return __output;
 };"""
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_for13(self):
         # XXX - test for loop for conflicting variables. Here we have a
         # namespaced variable that gets required but conflicts with the
         # variable inside the loop that we created. If this is a problem
         # I will fix it, but it probable won't
-        node = self.get_compile_from_string(
-        """{% macro forinlist(jobs) -%}
+        source = """{% macro forinlist(jobs) -%}
 {% for job in jobs %}{{ job.name }} does {{ jobData.name }}{% endfor %}
-{%- endmacro %}""")
-
-        source_code = jscompiler.generate(node, env, "f.html", "f.html")
+{%- endmacro %}"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -107,16 +104,14 @@ jinja2js.forinlist = function() {
     return __output;
 };"""
 
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_call_macro1(self):
         # call macro in same template, without arguments.
-        node = self.get_compile_from_string("""{% macro testif(option) -%}
+        source = """{% macro testif(option) -%}
 {% if option %}{{ option }}{% endif %}{% endmacro %}
 
-{% macro testcall() %}{{ testif() }}{% endmacro %}""")
-
-        source_code = jscompiler.generate(node, env, "f.html", "f.html")
+{% macro testcall() %}{{ testif() }}{% endmacro %}"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -138,16 +133,14 @@ jinja2js.testcall = function() {
     __output += jinja2js.testif();
     return __output;
 };"""
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_call_macro3(self):  # Copied from above and modified
         # call macro passing in a argument
-        node = self.get_compile_from_string("""{% macro testif(option) -%}
+        source = """{% macro testif(option) -%}
 {% if option %}{{ option }}{% endif %}{% endmacro %}
 
-{% macro testcall() %}{{ testif(option=true) }}{% endmacro %}""")
-
-        source_code = jscompiler.generate(node, env, "f.html", "f.html")
+{% macro testcall() %}{{ testif(option=true) }}{% endmacro %}"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -169,10 +162,10 @@ jinja2js.testcall = function() {
     __output += jinja2js.testif(true);
     return __output;
 };"""
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_callblock1(self):
-        node = self.get_compile_from_string("""{% macro render_dialog(type) -%}
+        source = """{% macro render_dialog(type) -%}
 <div class="type">{{ caller() }}</div>
 {%- endmacro %}
 
@@ -181,9 +174,7 @@ jinja2js.testcall = function() {
 Hello {{ name }}!
 {%- endcall %}
 {%- endmacro %}
-""")
-
-        source_code = jscompiler.generate(node, env, "cb.html", "cb.html")
+"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -209,14 +200,11 @@ jinja2js.render = function() {
     __output += jinja2js.render_dialog('box', null, func_caller);
     return __output;
 };"""
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_filter_capitalize(self):
         # different in concat and stringbuilder modes
-        node = self.get_compile_from_string(
-            """{% macro trunc(s) %}{{ s|capitalize }}{% endmacro %}""")
-
-        source_code = jscompiler.generate(node, env, "f.html", "f.html")
+        source = """{% macro trunc(s) %}{{ s|capitalize }}{% endmacro %}"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -229,14 +217,11 @@ jinja2js.trunc = function() {
     return __output;
 };"""
 
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
 
     def test_filter_string(self):
         # different in concat and stringbuilder modes
-        node = self.get_compile_from_string(
-            """{% macro trunc(s) %}{{ s|string }}{% endmacro %}""")
-
-        source_code = jscompiler.generate(node, env, "f.html", "f.html")
+        source = """{% macro trunc(s) %}{{ s|string }}{% endmacro %}"""
 
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
@@ -249,4 +234,4 @@ jinja2js.trunc = function() {
     return __output;
 };"""
 
-        compare(source_code, expected)
+        compile_and_compare(source, expected)
