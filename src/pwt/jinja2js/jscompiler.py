@@ -235,9 +235,10 @@ class BaseCodeGenerator(NodeVisitor):
 
 class CodeGenerator(BaseCodeGenerator):
 
-    def __init__(self, environment, name, filename):
+    def __init__(self, environment, name, filename, namespace="jinja2js"):
         super(CodeGenerator, self).__init__(environment, name, filename)
         self.writer = Concat()
+        self.namespace = namespace
 
     def visit_Template(self, node):
         """
@@ -262,17 +263,18 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
+        self.writer.writeline("if(typeof %s == 'undefined') {var %s = {};}\n\n"
+                              % (self.namespace, self.namespace))
         self.blockvisit(node.body, frame)
 
     def visit_Import(self, node, frame):
         self.writer.mark(node)
 
     def visit_Macro(self, node, frame):
-        generator = MacroCodeGenerator(
-            self.environment,
-            self.writer.__class__(self.environment),
-            self.name,
-            self.filename)
+        generator = MacroCodeGenerator(self.environment,
+                                       self.writer.__class__(self.environment),
+                                       self.namespace, self.name,
+                                       self.filename)
         generator.visit(node, frame)
 
         self.writer.write(generator.writer.stream.getvalue())
@@ -280,12 +282,6 @@ class CodeGenerator(BaseCodeGenerator):
     def visit_TemplateData(self, node, frame):
         self.writer.mark(node)
         self.writer.write(node.data)
-
-
-class ConcatCodeGenerator(CodeGenerator):
-
-    def __init__(self, environment, name, filename):
-        super(ConcatCodeGenerator, self).__init__(environment, name, filename)
 
 
 STRINGBUILDER = "StringBuilder"
@@ -301,10 +297,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
     # templates, comments should be displayed in the JS file. We need them for
     # any closure compiler hints we may want to put in.
 
-    def __init__(self, environment, writer, name, filename):
+    def __init__(self, environment, writer, namespace, name, filename):
         super(MacroCodeGenerator, self).__init__(environment, name, filename)
 
         self.writer = writer
+        self.namespace = namespace
 
     def visit_Output(self, node, frame):
         # JS is only interested in macros etc, as all of JavaScript
@@ -505,6 +502,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
             output = frame.reassigned_names[name]
 
             isparam = True
+        elif name in ids.declared:
+            output = self.namespace + "." + name
         elif name in frame.identifiers.declared or \
                  name in frame.identifiers.declared_locally:
             output = name
@@ -760,7 +759,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writer.writeline("%s = function() {" % name)
+        self.writer.writeline("%s.%s = function() {" % (self.namespace, name))
         self.writer.indent()
         self.writer.writeline("var __arg_len = arguments.length;")
         self.writer.writeline("var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;")
@@ -779,6 +778,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writer.outdent()
         self.writer.writeline("};")
 
+    def caller_body(self, name, node, frame, children):
+        self.writer.writeline("%s = function() {" % name)
+        self.writer.indent()
+        self.writer.writeline_startoutput(node, frame)
+        self.blockvisit(node.body, frame)
+        self.writer.writeline_endoutput(node, frame)
+        self.writer.outdent()
+        self.writer.writeline("};")
+
     def visit_Macro(self, node, frame):
         name = node.name
         self.macro_body(name, node, frame)
@@ -790,7 +798,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # Add the caller function to the macro.
         # XXX - Make sure we don't have a namespace cnoflict here.
         children = node.iter_child_nodes(exclude=("call",))
-        self.macro_body("func_caller", node, frame, children=children)
+        self.caller_body("func_caller", node, frame, children=children)
 
         # call the macro passing in the caller method
         if self.writer.__class__.__name__ == STRINGBUILDER:
@@ -993,15 +1001,12 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
         generator.writer.write(" / %s" % precision)
 
 
-def _generate(node, generator):
+def generate(node, environment, name, filename):
+    """Generate the python source for a node tree."""
+
     if not isinstance(node, jinja2.nodes.Template):
         raise TypeError("Can't compile non template nodes")
 
+    generator = CodeGenerator(environment, name, filename)
     generator.visit(node)
     return generator.writer.stream.getvalue()
-
-
-def generate(node, environment, name, filename):
-    """Generate the python source for a node tree."""
-    generator = CodeGenerator(environment, name, filename)
-    return _generate(node, generator)

@@ -11,10 +11,11 @@ import jinja2.environment
 import jscompiler
 
 
-def generateMacro(node, environment, name, filename, autoescape=False):
+def generateMacro(node, environment, name, filename,
+                  autoescape=False, namespace='testNS'):
     # Need to test when we are not using an Environment from jinja2js
-    generator = jscompiler.MacroCodeGenerator(
-        environment, jscompiler.Concat(), None, None)
+    generator = jscompiler.MacroCodeGenerator(environment, jscompiler.Concat(),
+                                              namespace, None, None)
     eval_ctx = jinja2.nodes.EvalContext(environment, name)
     eval_ctx.autoescape = autoescape
     generator.blockvisit(node.body, jscompiler.JSFrame(environment, eval_ctx))
@@ -58,7 +59,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 {% endmacro %}
 """)
         source_code = generateMacro(node, self.env, "var1.html", "var1.html")
-        expected = """hello = function() {
+        expected = """testNS.hello = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
@@ -74,7 +75,7 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 {% endmacro %}
 """)
         source_code = generateMacro(node, self.env, "var1.html", "var1.html")
-        expected = """hello = function() {
+        expected = """testNS.hello = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {person: arguments[0]};
@@ -96,7 +97,9 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        expected = """forinlist = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.forinlist = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {jobs: arguments[0]};
@@ -121,7 +124,9 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        expected = """testif = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.testif = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
@@ -132,11 +137,11 @@ class JSConcatCompilerTemplateTestCase(unittest.TestCase):
     return __output;
 };
 
-testcall = function() {
+jinja2js.testcall = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __output = '';
-    __output += testif();
+    __output += jinja2js.testif();
     return __output;
 };"""
         compare(source_code, expected)
@@ -150,7 +155,9 @@ testcall = function() {
 
         source_code = jscompiler.generate(node, self.env, "f.html", "f.html")
 
-        expected = """testif = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.testif = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {option: arguments[0]};
@@ -161,11 +168,11 @@ testcall = function() {
     return __output;
 };
 
-testcall = function() {
+jinja2js.testcall = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __output = '';
-    __output += testif(true);
+    __output += jinja2js.testif(true);
     return __output;
 };"""
         compare(source_code, expected)
@@ -184,7 +191,9 @@ Hello {{ name }}!
 
         source_code = jscompiler.generate(node, self.env, "cb.html", "cb.html")
 
-        expected = """render_dialog = function() {
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.render_dialog = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {type: arguments[0]};
@@ -193,19 +202,17 @@ Hello {{ name }}!
     return __output;
 };
 
-render = function() {
+jinja2js.render = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {name: arguments[0]};
     var __output = '';
     func_caller = function() {
-        var __arg_len = arguments.length;
-        var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
         var __output = '';
         __output += 'Hello ' + __data.name + '!';
         return __output;
     };
-    __output += render_dialog('box', null, func_caller);
+    __output += jinja2js.render_dialog('box', null, func_caller);
     return __output;
 };"""
         compare(source_code, expected)
@@ -217,7 +224,7 @@ render = function() {
 
         source_code = generateMacro(node, self.env, "f.html", "f.html")
 
-        expected = """trunc = function() {
+        expected = """testNS.trunc = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
@@ -235,7 +242,7 @@ render = function() {
 
         source_code = generateMacro(node, self.env, "f.html", "f.html")
 
-        expected = """trunc = function() {
+        expected = """testNS.trunc = function() {
     var __arg_len = arguments.length;
     var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
     var __data = {s: arguments[0]};
