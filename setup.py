@@ -6,7 +6,7 @@ can be included via script tags or can be added to the applications JavaScript.
 from setuptools import find_packages, setup
 
 setup(
-    name = "pwt.jinja2js",
+    name = "jinja2js",
     version = "0.7.4",
 
     author = "Michael Kerrin",
@@ -31,19 +31,12 @@ setup(
 
     packages = find_packages("src"),
     package_dir = {"": "src"},
-    namespace_packages = ["pwt"],
 
     install_requires = [
-        "setuptools",
         # "MarkupSafe",
         "Jinja2",
         ],
 
-    entry_points = """
-[nose.plugins]
-test-suites = pwt.jinja2js.nose_test_suites:Suites
-
-""",
 
     include_package_data = True,
     zip_safe = False,

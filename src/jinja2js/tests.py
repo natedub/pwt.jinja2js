@@ -11,7 +11,7 @@ import jinja2.environment
 import jscompiler
 
 
-env = Environment(loader=PackageLoader('pwt.jinja2js', 'test_templates'))
+env = Environment(loader=PackageLoader('jinja2js', 'test_templates'))
 
 
 def compare(result, expected):
