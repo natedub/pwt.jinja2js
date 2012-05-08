@@ -209,10 +209,10 @@ class BaseCodeGenerator(NodeVisitor):
         self.write(";")
 
     def write_htmlescape(self, node, frame):
-        self.write("soy.$$escapeHtml(")
+        pass
 
     def write_htmlescape_end(self, node, frame):
-        self.write(")")
+        pass
 
     def blockvisit(self, nodes, frame):
         """
