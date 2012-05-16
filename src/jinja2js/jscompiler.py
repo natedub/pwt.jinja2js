@@ -735,8 +735,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writeline("%s.%s = function() {" % (self.namespace, name))
         self.indent()
 
-        self.writeline("var __data = "
-                       "jinja2support.parse_args(arguments, [")
+        self.writeline("var __data = jinja2support.parse_args(arguments, [")
         js_args = ["'%s'" % arg.name for arg in node.args]
         self.write(", ".join(js_args))
         self.write("]);")
