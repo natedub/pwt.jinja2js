@@ -53,9 +53,7 @@ class JSCompilerTemplateTestCase(unittest.TestCase):
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.hello = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {name: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['name']);
     var __output = '';
     __output += '\\n' + __data.name + '\\n';
     return __output;
@@ -70,11 +68,47 @@ jinja2js.hello = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.hello = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {person: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['person']);
     var __output = '';
     __output += '\\n' + __data.person.name + '\\n';
+    return __output;
+};"""
+        compile_and_compare(source, expected)
+
+    def test_in_operand(self):
+        source = """{% macro test_in(name) %}
+{% if name in ['bob', 'john'] %}Yes{% endif %}
+{% endmacro %}"""
+
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.test_in = function() {
+    var __data = jinja2support.parse_args(arguments, ['name']);
+    var __output = '';
+    __output += '\\n';
+    if (jinja2support.in(__data.name, ['bob', 'john'])) {
+        __output += 'Yes';
+    }
+    __output += '\\n';
+    return __output;
+};"""
+        compile_and_compare(source, expected)
+
+    def test_not_in_operand(self):
+        source = """{% macro test_not_in(name) %}
+{% if name not in ['bob', 'john'] %}No{% endif %}
+{% endmacro %}"""
+
+        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
+
+jinja2js.test_not_in = function() {
+    var __data = jinja2support.parse_args(arguments, ['name']);
+    var __output = '';
+    __output += '\\n';
+    if (!jinja2support.in(__data.name, ['bob', 'john'])) {
+        __output += 'No';
+    }
+    __output += '\\n';
     return __output;
 };"""
         compile_and_compare(source, expected)
@@ -91,9 +125,7 @@ jinja2js.hello = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.forinlist = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {jobs: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['jobs']);
     var __output = '';
     var jobList = __data.jobs;
     var jobListLen = jobList.length;
@@ -116,9 +148,7 @@ jinja2js.forinlist = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.testif = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {option: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['option']);
     var __output = '';
     if (__data.option) {
         __output += __data.option;
@@ -127,8 +157,7 @@ jinja2js.testif = function() {
 };
 
 jinja2js.testcall = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
+    var __data = jinja2support.parse_args(arguments, []);
     var __output = '';
     __output += jinja2js.testif();
     return __output;
@@ -145,9 +174,7 @@ jinja2js.testcall = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.testif = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {option: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['option']);
     var __output = '';
     if (__data.option) {
         __output += __data.option;
@@ -156,8 +183,7 @@ jinja2js.testif = function() {
 };
 
 jinja2js.testcall = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
+    var __data = jinja2support.parse_args(arguments, []);
     var __output = '';
     __output += jinja2js.testif(true);
     return __output;
@@ -179,18 +205,14 @@ Hello {{ name }}!
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.render_dialog = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {type: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['type']);
     var __output = '';
-    __output += '<div class="type">' + __caller() + '</div>';
+    __output += '<div class="type">' + __data.__caller() + '</div>';
     return __output;
 };
 
 jinja2js.render = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {name: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['name']);
     var __output = '';
     func_caller = function() {
         var __output = '';
@@ -209,9 +231,7 @@ jinja2js.render = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.trunc = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {s: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['s']);
     var __output = '';
     __output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
     return __output;
@@ -226,9 +246,7 @@ jinja2js.trunc = function() {
         expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
 
 jinja2js.trunc = function() {
-    var __arg_len = arguments.length;
-    var __caller = __arg_len > 0 && typeof(arguments[__arg_len-1]) === 'function' ? arguments.pop() : null;
-    var __data = {s: arguments[0]};
+    var __data = jinja2support.parse_args(arguments, ['s']);
     var __output = '';
     __output += '' + __data.s;
     return __output;

@@ -24,9 +24,9 @@ OPERATORS = {
     "gteq":  ">=",
     "lt":    "<",
     "lteq":  "<=",
-    ## "in":    "in",
-    ## "notin": "not in"
     }
+
+LIST_OPERATORS = ('in', 'notin')
 
 
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
@@ -209,10 +209,10 @@ class BaseCodeGenerator(NodeVisitor):
         self.write(";")
 
     def write_htmlescape(self, node, frame):
-        pass
+        self.write('jinja2support.escape(')
 
     def write_htmlescape_end(self, node, frame):
-        pass
+        self.write(')')
 
     def blockvisit(self, nodes, frame):
         """
@@ -596,16 +596,22 @@ class MacroCodeGenerator(BaseCodeGenerator):
     del binop, uaop
 
     def visit_Compare(self, node, frame):
-        self.visit(node.expr, frame)
-        # XXX - ops is a list. Can we have a list of comparisons
-        for op in node.ops:
-            self.visit(op, frame)
+        op = node.ops[0]
+        if len(node.ops) == 1 and op.op in LIST_OPERATORS:
+            if op.op == 'notin':
+                self.write('!')
+            self.write('jinja2support.in(')
+            self.visit(node.expr, frame)
+            self.write(', ')
+            self.visit(op.expr, frame)
+            self.write(')')
+        else:
+            self.visit(node.expr, frame)
+            # XXX - ops is a list. Can we have a list of comparisons
+            for op in node.ops:
+                self.visit(op, frame)
 
     def visit_Operand(self, node, frame):
-        if node.op not in OPERATORS:
-            raise jinja2.compiler.TemplateAssertionError(
-                "Comparison operator '%s' not supported in JavaScript",
-                node.lineno, self.name, self.filename)
         self.write(" %s " % OPERATORS[node.op])
         self.visit(node.expr, frame)
 
@@ -719,7 +725,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # Handle special variables.
         if "caller" in func_frame.identifiers.undeclared:
             func_frame.identifiers.undeclared.discard("caller")
-            func_frame.reassigned_names["caller"] = "__caller"
+            func_frame.reassigned_names["caller"] = "__data.__caller"
 
         return func_frame
 
@@ -728,19 +734,12 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         self.writeline("%s.%s = function() {" % (self.namespace, name))
         self.indent()
-        self.writeline("var __arg_len = arguments.length;")
-        self.writeline("var __caller = __arg_len > 0 && "
-                       "typeof(arguments[__arg_len-1]) === 'function' ? "
-                       "arguments.pop() : null;")
 
-        if node.args:
-            self.writeline("var __data = {")
-            js_args = []
-            for i in xrange(len(node.args)):
-                arg = node.args[i]
-                js_args.append("%s: arguments[%d]" % (arg.name, i))
-            self.write(", ".join(js_args))
-            self.write("};")
+        self.writeline("var __data = "
+                       "jinja2support.parse_args(arguments, [")
+        js_args = ["'%s'" % arg.name for arg in node.args]
+        self.write(", ".join(js_args))
+        self.write("]);")
         self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
         self.writeline_endoutput(node, frame)
