@@ -454,25 +454,30 @@ class MacroCodeGenerator(BaseCodeGenerator):
         name = node.name
         isparam = False
 
+        from nose.tools import set_trace
+        #set_trace()
+
         ids = frame.identifiers
+        topframe = frame
+        while not topframe.toplevel:
+            topframe = topframe.parent
+
+        parent_ids = frame.parent.identifiers if frame.parent else None
+
         if name in ids.declared_parameter or name in ids.outer_undeclared:
             output = "__data." + name
             isparam = True
-        elif frame.parent is not None and \
-               name in frame.parent.identifiers.declared_parameter:
-            # Once we have tried any local variables we need to check
-            # the parent if we have a declared parameter from there
+        elif parent_ids and name in parent_ids.declared_parameter:
             output = '__data.' + name
 
-            isparam = True
         elif name in frame.reassigned_names:
             output = frame.reassigned_names[name]
 
             isparam = True
-        elif name in ids.declared:
-            output = self.namespace + "." + name
-        elif name in frame.identifiers.declared or \
-                 name in frame.identifiers.declared_locally:
+
+        elif name in topframe.identifiers.declared_locally:
+                output = self.namespace + "." + name
+        elif name in name in frame.identifiers.declared_locally:
             output = name
 
         elif name in ids.imports:

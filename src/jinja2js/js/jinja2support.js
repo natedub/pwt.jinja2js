@@ -23,10 +23,10 @@ var jinja2support = {};
     };
 
     jinja2support.in = function(value, collection) {
-        if(collection.hasOwnProperty('indexOf')) {
-            return collection.indexOf(value) > -1;
-        } else if (Object.prototype.toString.call(collection)
-            === '[object Array]') {
+        if (Object.prototype.toString.call(collection) === '[object Array]') {
+            if (Array.prototype.indexOf) {
+                return Array.prototype.indexOf.call(collection, value) > -1;
+            }
             for (var i = 0; i < collection.length; i++) {
                 if(collection[i] === value) {
                     return true;
