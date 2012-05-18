@@ -454,9 +454,6 @@ class MacroCodeGenerator(BaseCodeGenerator):
         name = node.name
         isparam = False
 
-        from nose.tools import set_trace
-        #set_trace()
-
         ids = frame.identifiers
         topframe = frame
         while not topframe.toplevel:
