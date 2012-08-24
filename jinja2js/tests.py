@@ -31,7 +31,7 @@ def compile_from_string(source, name=None, filename=None):
 
 def compile_and_compare(source, expected):
     node = compile_from_string(source)
-    compiled = jscompiler.generate(node, env, None, None)
+    compiled = jscompiler._generate(node, env, None, None, 'jinja2js')
     compare(compiled, expected)
 
 
@@ -41,9 +41,9 @@ class JSCompilerTemplateTestCase(unittest.TestCase):
         # variable is undeclared
         node = compile_from_string("{% macro hello() %}{{ name }}"
                                    "{% endmacro %} ")
-        self.assertRaises(
-            jinja2.compiler.TemplateAssertionError,
-            jscompiler.generate, node, env, "var1.html", "var1.html")
+        self.assertRaises(jinja2.compiler.TemplateAssertionError,
+                          jscompiler._generate, node, env, "var1.html",
+                          "var1.html", 'jinja2js')
 
     def test_var1(self):
         source = """{% macro hello(name) %}
