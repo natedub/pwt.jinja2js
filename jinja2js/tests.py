@@ -11,7 +11,8 @@ from jinja2.compiler import TemplateAssertionError
 import jscompiler
 
 
-env = Environment(loader=PackageLoader('jinja2js', 'test_templates'))
+env = Environment(loader=PackageLoader('jinja2js', 'test_templates'),
+                  autoescape=True)
 
 
 def compare(result, expected):

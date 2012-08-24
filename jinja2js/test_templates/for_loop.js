@@ -6,7 +6,7 @@ jinja2js.forinlist = function() {
     var jobListLen = jobList.length;
     for (var jobIndex = 0; jobIndex < jobListLen; jobIndex++) {
         var jobData = jobList[jobIndex];
-        __output += '\n' + jobData.name + ' does ' + jobData.name + '\n';
+        __output += '\n' + jinja2support.escape(jobData.name) + ' does ' + jinja2support.escape(jobData.name) + '\n';
     }
     return __output;
 };

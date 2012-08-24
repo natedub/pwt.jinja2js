@@ -11,7 +11,7 @@ jinja2js.render = function() {
     var __output = '';
     func_caller = function() {
         var __output = '';
-        __output += 'Hello ' + __data.name + '!';
+        __output += 'Hello ' + jinja2support.escape(__data.name) + '!';
         return __output;
     };
     __output += jinja2js.render_dialog('box', null, func_caller);

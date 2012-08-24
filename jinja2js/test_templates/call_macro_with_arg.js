@@ -3,7 +3,7 @@ jinja2js.testif = function() {
     var __data = jinja2support.parse_args(arguments, ['option']);
     var __output = '';
     if (__data.option) {
-        __output += '\n' + __data.option + '\n';
+        __output += '\n' + jinja2support.escape(__data.option) + '\n';
     }
     __output += '\n';
     return __output;

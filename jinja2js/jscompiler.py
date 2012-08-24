@@ -352,7 +352,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
                         self.visit(item.node, frame)
                         continue
 
-                if frame.eval_ctx.autoescape:
+                if isinstance(item, jinja2.nodes.Call):
+                    self.visit(item, frame)
+
+                elif frame.eval_ctx.autoescape:
                     self.write_htmlescape(node, frame)
                     escaped_frame = frame.soft()
                     escaped_frame.escaped = True
@@ -474,7 +477,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             isparam = True
 
         elif name in topframe.identifiers.declared_locally:
-                output = self.namespace + "." + name
+            output = self.namespace + "." + name
         elif name in name in frame.identifiers.declared_locally:
             output = name
 
@@ -850,7 +853,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
         dotted_name = []
-        self.visit(node.node, frame, dotted_name=dotted_name)
+        call_frame = frame.soft()
+        call_frame.escaped = True
+        self.visit(node.node, call_frame, dotted_name=dotted_name)
         func_name = ".".join(dotted_name)
 
         # Like signature(), this assumes that function calls with only
