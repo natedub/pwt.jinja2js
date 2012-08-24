@@ -9,12 +9,12 @@ setup(
     name = "jinja2js",
     version = "0.7.4",
 
-    author = "Michael Kerrin",
-    author_email = "michael.kerrin@gmail.com",
+    author = "William Kral, Michael Kerrin",
+    author_email = "william.kral@gmail.com, michael.kerrin@gmail.com",
     license = "BSD",
     description = __doc__,
-    long_description = open("README.rst").read(),
-    url = "https://github.com/mkerrin/pwt.jinja2js",
+    long_description = open("README.md").read(),
+    url = "https://github.com/wkral/jinja2js",
 
     classifiers = [
         "Development Status :: 5 - Production/Stable",
@@ -29,14 +29,9 @@ setup(
         "Topic :: Text Processing :: Markup :: HTML"
     ],
 
-    packages = find_packages("src"),
-    package_dir = {"": "src"},
+    packages = find_packages(),
 
-    install_requires = [
-        # "MarkupSafe",
-        "Jinja2",
-        ],
-
+    install_requires = ["Jinja2"],
 
     include_package_data = True,
     zip_safe = False,

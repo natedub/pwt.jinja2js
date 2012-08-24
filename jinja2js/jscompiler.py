@@ -971,12 +971,17 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
         generator.write(" / %s" % precision)
 
 
-def generate(node, environment, name, filename, namespace="jinja2js"):
-    """Generate the python source for a node tree."""
+def generate(environment, name, filename, namespace="jinja2js"):
+    """Generate the javascript source for jinja template."""
 
-    if not isinstance(node, jinja2.nodes.Template):
-        raise TypeError("Can't compile non template nodes")
+    src, path, uptodate = environment.loader.get_source(environment, filename)
 
+    node = environment.parse(src)
+
+    return _generate(node, environment, name, filename, namespace)
+
+
+def _generate(node, environment, name, filename, namespace):
     generator = CodeGenerator(environment, name, filename, namespace)
     generator.visit(node)
     return generator.stream.getvalue()
