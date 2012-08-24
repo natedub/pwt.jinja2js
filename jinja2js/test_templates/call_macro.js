@@ -1,18 +1,18 @@
-(function(jinja2js) {
-jinja2js.testif = function() {
-    var __data = jinja2support.parse_args(arguments, ['option']);
+(function(__ns, _) {
+__ns.testif = function() {
+    var __data = _.parse_args(arguments, ['option']);
     var __output = '';
-    if (__data.option) {
-        __output += '\n' + jinja2support.escape(__data.option) + '\n';
+    if (!_.not(__data.option)) {
+        __output += '\n' + _.escape(__data.option) + '\n';
     }
     __output += '\n';
     return __output;
 };
 
-jinja2js.testcall = function() {
-    var __data = jinja2support.parse_args(arguments, []);
+__ns.testcall = function() {
+    var __data = _.parse_args(arguments, []);
     var __output = '';
-    __output += '\n' + jinja2js.testif() + '\n';
+    __output += '\n' + __ns.testif() + '\n';
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {});
+})(window.jinja2js = window.jinja2js || {}, jinja2support);

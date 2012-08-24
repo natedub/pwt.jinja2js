@@ -1,8 +1,8 @@
-(function(jinja2js) {
-jinja2js.test_obj = function() {
-    var __data = jinja2support.parse_args(arguments, ['obj']);
+(function(__ns, _) {
+__ns.test_obj = function() {
+    var __data = _.parse_args(arguments, ['obj']);
     var __output = '';
-    __output += jinja2support.escape(__data.obj['a']);
+    __output += _.escape(__data.obj['a']);
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {});
+})(window.jinja2js = window.jinja2js || {}, jinja2support);

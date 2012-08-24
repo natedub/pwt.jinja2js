@@ -1,4 +1,7 @@
 (function(jinja2support) {
+    var toString = Object.prototype.toString;
+    var has = Object.prototype.hasOwnProperty;
+    var indexOf = Array.prototype.indexOf;
 
     jinja2support.parse_args = function(args, argspec) {
         var data = {};
@@ -22,11 +25,11 @@
     };
 
     jinja2support.in = function(value, collection) {
-        if (Object.prototype.toString.call(collection) === '[object Array]') {
-            if (Array.prototype.indexOf) {
-                return Array.prototype.indexOf.call(collection, value) > -1;
+        if (toString.call(collection) === '[object Array]') {
+            if (indexOf) {
+                return indexOf.call(collection, value) > -1;
             }
-            for (var i = 0; i < collection.length; i++) {
+            for (var i = 0, l = collection.length; i < l; i++) {
                 if (collection[i] === value) {
                     return true;
                 }
@@ -34,5 +37,15 @@
         }
         return value in collection;
     };
+
+    jinja2support.not = function(value) {
+        var type = toString.call(value);
+        if (type === '[object Array]') return !value.length;
+        if (type === '[object Object]') {
+            for (var prop in value) if (has.call(value, prop)) return false;
+            return true;
+        }
+        return !value;
+    }
 
 })(window.jinja2support = window.jinja2support || {});

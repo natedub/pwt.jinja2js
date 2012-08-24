@@ -1,0 +1,11 @@
+{% macro test_and(foo, bar) -%}
+{% if foo and bar %}True{% endif %}
+{%- endmacro %}
+
+{% macro test_or(foo, bar) -%}
+{% if foo or bar %}True{% endif %}
+{%- endmacro %}
+
+{% macro test_xor(foo, bar) -%}
+{% if (foo or bar) and not (foo and bar) %}True{% endif %}
+{%- endmacro %}

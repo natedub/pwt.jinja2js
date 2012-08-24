@@ -8,11 +8,6 @@ import jinja2.compiler
 from jinja2.utils import escape
 
 
-BINOPERATORS = {
-    "and": "&&",
-    "or":  "||",
-    }
-
 UNARYOP = {
     "not ": "!"
     }
@@ -209,7 +204,7 @@ class BaseCodeGenerator(NodeVisitor):
         self.write(";")
 
     def write_htmlescape(self, node, frame):
-        self.write('jinja2support.escape(')
+        self.write('_.escape(')
 
     def write_htmlescape_end(self, node, frame):
         self.write(')')
@@ -253,9 +248,9 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writeline("(function(%s) {\n" % self.namespace)
+        self.writeline("(function(__ns, _) {\n")
         self.blockvisit(node.body, frame)
-        self.writeline("})(window.%s = window.%s || {});" %
+        self.writeline("})(window.%s = window.%s || {}, jinja2support);" %
                        (self.namespace, self.namespace))
 
     def visit_Import(self, node, frame):
@@ -477,7 +472,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             isparam = True
 
         elif name in topframe.identifiers.declared_locally:
-            output = self.namespace + "." + name
+            output = "__ns." + name
         elif name in name in frame.identifiers.declared_locally:
             output = name
 
@@ -585,7 +580,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         def visitor(self, node, frame):
             self.write("(")
             self.visit(node.left, frame)
-            self.write(" %s " % BINOPERATORS.get(operator, operator))
+            self.write(" %s " % operator)
             self.visit(node.right, frame)
             self.write(")")
         return visitor
@@ -595,6 +590,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
     visit_Sub = binop("-")
     visit_Mul = binop("*")
     visit_Div = binop("/")
+    visit_Mod = binop("%")
 
     def visit_FloorDiv(self, node, frame):
         self.write("Math.floor(")
@@ -610,13 +606,23 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.visit(node.right, frame)
         self.write(")")
 
-    visit_Mod = binop("%")
-    visit_And = binop("and")
-    visit_Or = binop("or")
+    def visit_And(self, node, frame):
+        self.write("!_.not(")
+        self.visit(node.left, frame)
+        self.write(") && !_.not(")
+        self.visit(node.right, frame)
+        self.write(")")
+
+    def visit_Or(self, node, frame):
+        self.write("!_.not(")
+        self.visit(node.left, frame)
+        self.write(") || !_.not(")
+        self.visit(node.right, frame)
+        self.write(")")
 
     def uaop(operator):
         def visitor(self, node, frame):
-            self.write("(" + UNARYOP.get(operator, operator))
+            self.write(UNARYOP.get(operator, operator) + "(")
             self.visit(node.node, frame)
             self.write(")")
         return visitor
@@ -625,9 +631,6 @@ class MacroCodeGenerator(BaseCodeGenerator):
     visit_Neg = uaop("-")
     visit_Not = uaop("not ")
 
-    visit_And = binop("and")
-    visit_Or = binop("or")
-
     del binop, uaop
 
     def visit_Compare(self, node, frame):
@@ -635,7 +638,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if len(node.ops) == 1 and op.op in LIST_OPERATORS:
             if op.op == 'notin':
                 self.write('!')
-            self.write('jinja2support.in(')
+            self.write('_.in(')
             self.visit(node.expr, frame)
             self.write(', ')
             self.visit(op.expr, frame)
@@ -652,9 +655,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     def visit_If(self, node, frame):
         if_frame = frame.soft()
-        self.writeline("if (", node)
+        self.writeline("if (!_.not(", node)
         self.visit(node.test, if_frame)
-        self.write(") {")
+        self.write(")) {")
 
         self.indent()
         self.blockvisit(node.body, if_frame)
@@ -767,10 +770,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writeline("%s.%s = function() {" % (self.namespace, name))
+        self.writeline("__ns.%s = function() {" % name)
         self.indent()
 
-        self.writeline("var __data = jinja2support.parse_args(arguments, [")
+        self.writeline("var __data = _.parse_args(arguments, [")
         js_args = ["'%s'" % arg.name for arg in node.args]
         self.write(", ".join(js_args))
         self.write("]);")
