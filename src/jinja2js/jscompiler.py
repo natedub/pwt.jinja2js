@@ -253,9 +253,10 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writeline("if(typeof %s == 'undefined') {var %s = {};}\n\n"
-                              % (self.namespace, self.namespace))
+        self.writeline("(function(%s) {\n" % self.namespace)
         self.blockvisit(node.body, frame)
+        self.writeline("})(window.%s = window.%s || {});" %
+                       (self.namespace, self.namespace))
 
     def visit_Import(self, node, frame):
         self.mark(node)
@@ -497,13 +498,22 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         return isparam
 
-    def visit_Getitem(self, node, frame):
+    def visit_Getitem(self, node, frame, dotted_name=None):
         # Careful, there is something in Jinja2 about node.arg extending
         # jinja2.nodes.Slice
-        self.visit(node.node, frame)
-        self.write("[")
-        self.visit(node.arg, frame)
-        self.write("]")
+        write_variable = False
+        if dotted_name is None:
+            dotted_name = []
+            write_variable = True
+
+        self.visit(node.node, frame, dotted_name)
+        self.visit(node.arg, frame, dotted_name)
+        arg = dotted_name.pop()
+        node = dotted_name.pop()
+        dotted_name.append("%s[%s]" % (node, arg))
+
+        if write_variable:
+            self.write(".".join(dotted_name))
 
     def visit_Getattr(self, node, frame, dotted_name=None):
         # We only need to check when `loop` is the first name-space in the

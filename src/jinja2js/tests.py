@@ -50,14 +50,14 @@ class JSCompilerTemplateTestCase(unittest.TestCase):
 {{ name }}
 {% endmacro %}
 """
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.hello = function() {
     var __data = jinja2support.parse_args(arguments, ['name']);
     var __output = '';
     __output += '\\n' + __data.name + '\\n';
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_var2(self):
@@ -65,14 +65,14 @@ jinja2js.hello = function() {
 {{ person.name }}
 {% endmacro %}
 """
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.hello = function() {
     var __data = jinja2support.parse_args(arguments, ['person']);
     var __output = '';
     __output += '\\n' + __data.person.name + '\\n';
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_in_operand(self):
@@ -80,8 +80,7 @@ jinja2js.hello = function() {
 {% if name in ['bob', 'john'] %}Yes{% endif %}
 {% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.test_in = function() {
     var __data = jinja2support.parse_args(arguments, ['name']);
     var __output = '';
@@ -91,7 +90,8 @@ jinja2js.test_in = function() {
     }
     __output += '\\n';
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_not_in_operand(self):
@@ -99,8 +99,7 @@ jinja2js.test_in = function() {
 {% if name not in ['bob', 'john'] %}No{% endif %}
 {% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.test_not_in = function() {
     var __data = jinja2support.parse_args(arguments, ['name']);
     var __output = '';
@@ -110,7 +109,8 @@ jinja2js.test_not_in = function() {
     }
     __output += '\\n';
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_for13(self):
@@ -122,8 +122,7 @@ jinja2js.test_not_in = function() {
 {% for job in jobs %}{{ job.name }} does {{ jobData.name }}{% endfor %}
 {%- endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.forinlist = function() {
     var __data = jinja2support.parse_args(arguments, ['jobs']);
     var __output = '';
@@ -134,7 +133,8 @@ jinja2js.forinlist = function() {
         __output += jobData.name + ' does ' + jobData.name;
     }
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
 
         compile_and_compare(source, expected)
 
@@ -145,8 +145,7 @@ jinja2js.forinlist = function() {
 
 {% macro testcall() %}{{ testif() }}{% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.testif = function() {
     var __data = jinja2support.parse_args(arguments, ['option']);
     var __output = '';
@@ -161,7 +160,8 @@ jinja2js.testcall = function() {
     var __output = '';
     __output += jinja2js.testif();
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_call_macro3(self):  # Copied from above and modified
@@ -171,8 +171,7 @@ jinja2js.testcall = function() {
 
 {% macro testcall() %}{{ testif(option=true) }}{% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.testif = function() {
     var __data = jinja2support.parse_args(arguments, ['option']);
     var __output = '';
@@ -187,7 +186,8 @@ jinja2js.testcall = function() {
     var __output = '';
     __output += jinja2js.testif(true);
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_callblock1(self):
@@ -202,8 +202,7 @@ Hello {{ name }}!
 {%- endmacro %}
 """
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.render_dialog = function() {
     var __data = jinja2support.parse_args(arguments, ['type']);
     var __output = '';
@@ -221,21 +220,22 @@ jinja2js.render = function() {
     };
     __output += jinja2js.render_dialog('box', null, func_caller);
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
         compile_and_compare(source, expected)
 
     def test_filter_capitalize(self):
         # different in concat and stringbuilder modes
         source = """{% macro trunc(s) %}{{ s|capitalize }}{% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.trunc = function() {
     var __data = jinja2support.parse_args(arguments, ['s']);
     var __output = '';
     __output += __data.s.substring(0, 1).toUpperCase() + __data.s.substring(1);
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
 
         compile_and_compare(source, expected)
 
@@ -243,13 +243,71 @@ jinja2js.trunc = function() {
         # different in concat and stringbuilder modes
         source = """{% macro trunc(s) %}{{ s|string }}{% endmacro %}"""
 
-        expected = """if(typeof jinja2js == 'undefined') {var jinja2js = {};}
-
+        expected = """(function(jinja2js) {
 jinja2js.trunc = function() {
     var __data = jinja2support.parse_args(arguments, ['s']);
     var __output = '';
     __output += '' + __data.s;
     return __output;
-};"""
+};
+})(window.jinja2js = window.jinja2js || {});"""
+
+        compile_and_compare(source, expected)
+
+    def test_dotted_array_name(self):
+        source = """{% macro test_array_dot(items) %}
+{{items.large[0].name}}
+{% endmacro %}"""
+
+        expected = """(function(jinja2js) {
+jinja2js.test_array_dot = function() {
+    var __data = jinja2support.parse_args(arguments, ['items']);
+    var __output = '';
+    __output += '\\n' + __data.items.large[0].name + '\\n';
+    return __output;
+};
+})(window.jinja2js = window.jinja2js || {});"""
+
+        compile_and_compare(source, expected)
+
+    def test_array_value(self):
+        source = """{% macro test_array(items) %}{{items[0]}}{% endmacro %}"""
+
+        expected = """(function(jinja2js) {
+jinja2js.test_array = function() {
+    var __data = jinja2support.parse_args(arguments, ['items']);
+    var __output = '';
+    __output += __data.items[0];
+    return __output;
+};
+})(window.jinja2js = window.jinja2js || {});"""
+
+        compile_and_compare(source, expected)
+
+    def test_object_value(self):
+        source = """{% macro test_obj(obj) %}{{obj['a']}}{% endmacro %}"""
+
+        expected = """(function(jinja2js) {
+jinja2js.test_obj = function() {
+    var __data = jinja2support.parse_args(arguments, ['obj']);
+    var __output = '';
+    __output += __data.obj['a'];
+    return __output;
+};
+})(window.jinja2js = window.jinja2js || {});"""
+
+        compile_and_compare(source, expected)
+
+    def test_object_value_double_quote(self):
+        source = """{% macro test_obj(obj) %}{{obj["a"]}}{% endmacro %}"""
+
+        expected = """(function(jinja2js) {
+jinja2js.test_obj = function() {
+    var __data = jinja2support.parse_args(arguments, ['obj']);
+    var __output = '';
+    __output += __data.obj['a'];
+    return __output;
+};
+})(window.jinja2js = window.jinja2js || {});"""
 
         compile_and_compare(source, expected)

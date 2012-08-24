@@ -1,10 +1,9 @@
-var jinja2support = {};
+(function(jinja2support) {
 
-(function () {
     jinja2support.parse_args = function(args, argspec) {
         var data = {};
-        if(typeof(args[args.length -1]) === 'function') {
-            data.__caller = args[args.length -1];
+        if (typeof(args[args.length - 1]) === 'function') {
+            data.__caller = args[args.length - 1];
         }
         for (var i = 0; i < argspec.length; i++) {
             data[argspec[i]] = args[i];
@@ -13,13 +12,13 @@ var jinja2support = {};
     };
 
     jinja2support.escape = function(str) {
-        return (''+str)
+        return ('' + str)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#x27;')
-            .replace(/\//g,'&#x2F;');
+            .replace(/\//g, '&#x2F;');
     };
 
     jinja2support.in = function(value, collection) {
@@ -28,7 +27,7 @@ var jinja2support = {};
                 return Array.prototype.indexOf.call(collection, value) > -1;
             }
             for (var i = 0; i < collection.length; i++) {
-                if(collection[i] === value) {
+                if (collection[i] === value) {
                     return true;
                 }
             }
@@ -36,4 +35,4 @@ var jinja2support = {};
         return value in collection;
     };
 
-})();
+})(window.jinja2support = window.jinja2support || {});
