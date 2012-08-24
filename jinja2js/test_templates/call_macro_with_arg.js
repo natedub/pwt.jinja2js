@@ -2,7 +2,7 @@
 __ns.testif = function() {
     var __data = _.parse_args(arguments, ['option']);
     var __output = '';
-    if (!_.not(__data.option)) {
+    if (_.truth(__data.option)) {
         __output += '\n' + _.escape(__data.option) + '\n';
     }
     __output += '\n';

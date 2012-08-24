@@ -1,3 +1,7 @@
-{% macro test_in(name) %}
+{% macro test_in(name) -%}
 {% if name in ['bob', 'john'] %}Yes{% endif %}
-{% endmacro %}
+{%- endmacro %}
+
+{% macro test_not_in(name) -%}
+{% if name not in ['bob', 'john'] %}No{% endif %}
+{%- endmacro %}

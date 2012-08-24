@@ -46,6 +46,10 @@
             return true;
         }
         return !value;
-    }
+    };
+
+    jinja2support.truth = function(value) {
+        return !jinja2support.not(value);
+    };
 
 })(window.jinja2support = window.jinja2support || {});

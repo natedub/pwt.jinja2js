@@ -23,6 +23,11 @@ OPERATORS = {
 
 LIST_OPERATORS = ('in', 'notin')
 
+BOOL_NODES = (jinja2.nodes.And, jinja2.nodes.Or, jinja2.nodes.Not,
+              jinja2.nodes.Compare)
+
+BOOL_BIN_NODES = (jinja2.nodes.And, jinja2.nodes.Or, jinja2.nodes.Compare)
+
 
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
@@ -606,18 +611,54 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.visit(node.right, frame)
         self.write(")")
 
-    def visit_And(self, node, frame):
-        self.write("!_.not(")
-        self.visit(node.left, frame)
-        self.write(") && !_.not(")
-        self.visit(node.right, frame)
-        self.write(")")
+    def bool_binop(operator):
 
-    def visit_Or(self, node, frame):
-        self.write("!_.not(")
-        self.visit(node.left, frame)
-        self.write(") || !_.not(")
-        self.visit(node.right, frame)
+        def visitor(self, node, frame):
+            left_bool = type(node.left) in BOOL_NODES
+            left_bool_bin = type(node.left) in BOOL_BIN_NODES
+
+            if left_bool_bin:
+                self.write("(")
+
+            if not left_bool:
+                self.write("_.truth(")
+
+            self.visit(node.left, frame)
+
+            if not left_bool:
+                self.write(")")
+
+            if left_bool_bin:
+                self.write(")")
+
+            self.write(" %s " % operator)
+
+            right_bool = type(node.right) in BOOL_NODES
+            right_bool_bin = type(node.right) in BOOL_BIN_NODES
+
+            if right_bool_bin:
+                self.write("(")
+
+            if not right_bool:
+                self.write("_.truth(")
+
+            self.visit(node.right, frame)
+
+            if not right_bool:
+                self.write(")")
+
+            if right_bool_bin:
+                self.write(")")
+
+        return visitor
+
+    visit_And = bool_binop('&&')
+    visit_Or = bool_binop('||')
+
+    def visit_Not(self, node, frame):
+        start = "!(" if type(node.node) in BOOL_NODES else "_.not("
+        self.write(start)
+        self.visit(node.node, frame)
         self.write(")")
 
     def uaop(operator):
@@ -629,9 +670,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     visit_Pos = uaop("+")
     visit_Neg = uaop("-")
-    visit_Not = uaop("not ")
 
-    del binop, uaop
+    del binop, bool_binop, uaop
 
     def visit_Compare(self, node, frame):
         op = node.ops[0]
@@ -655,9 +695,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     def visit_If(self, node, frame):
         if_frame = frame.soft()
-        self.writeline("if (!_.not(", node)
+
+        test_bool = type(node.test) in BOOL_NODES
+
+        start = "if (" if test_bool else "if (_.truth("
+        end = ") {" if test_bool else ")) {"
+
+        self.writeline(start, node)
         self.visit(node.test, if_frame)
-        self.write(")) {")
+        self.write(end)
 
         self.indent()
         self.blockvisit(node.body, if_frame)
