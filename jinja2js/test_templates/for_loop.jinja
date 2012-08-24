@@ -1,0 +1,5 @@
+{% macro forinlist(jobs) -%}
+{% for job in jobs %}
+{{ job.name }} does {{ jobData.name }}
+{% endfor %}
+{%- endmacro %}

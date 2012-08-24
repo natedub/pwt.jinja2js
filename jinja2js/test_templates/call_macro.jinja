@@ -1,0 +1,9 @@
+{% macro testif(option) -%}
+{% if option %}
+{{ option }}
+{% endif %}
+{% endmacro %}
+
+{% macro testcall() %}
+{{ testif() }}
+{% endmacro %}

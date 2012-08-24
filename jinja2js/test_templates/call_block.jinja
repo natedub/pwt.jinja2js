@@ -1,0 +1,9 @@
+{% macro render_dialog(type) -%}
+<div class="type">{{ caller() }}</div>
+{%- endmacro %}
+
+{% macro render(name) -%}
+{% call render_dialog(type='box') -%}
+Hello {{ name }}!
+{%- endcall %}
+{%- endmacro %}
