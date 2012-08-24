@@ -1,0 +1,11 @@
+{% macro array_slice(arr) -%}
+{{arr[0:4]}}
+{%- endmacro %}
+
+{% macro array_slice_no_start(arr) -%}
+{{arr[:4]}}
+{%- endmacro %}
+
+{% macro array_slice_no_end(arr) -%}
+{{arr[1:]}}
+{%- endmacro %}

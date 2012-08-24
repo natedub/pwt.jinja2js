@@ -498,9 +498,27 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         return isparam
 
+    def visit_Slice(self, node, frame, dotted_name=None):
+        if node.step is not None:
+            raise NotImplementedError("jinja2js does not currently support "
+                                      "steps in slices")
+
+        if node.start:
+            self.visit(node.start, frame, dotted_name)
+            start = dotted_name.pop()
+        else:
+            start = '0'
+
+        if node.stop:
+            self.visit(node.stop, frame, dotted_name)
+            stop = ', %s' % dotted_name.pop()
+        else:
+            stop = ''
+
+        dotted_name.append('slice(%s%s)' % (start, stop))
+
     def visit_Getitem(self, node, frame, dotted_name=None):
-        # Careful, there is something in Jinja2 about node.arg extending
-        # jinja2.nodes.Slice
+
         write_variable = False
         if dotted_name is None:
             dotted_name = []
@@ -508,9 +526,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         self.visit(node.node, frame, dotted_name)
         self.visit(node.arg, frame, dotted_name)
-        arg = dotted_name.pop()
-        node = dotted_name.pop()
-        dotted_name.append("%s[%s]" % (node, arg))
+
+        if isinstance(node.arg, jinja2.nodes.Const):
+            arg = dotted_name.pop()
+            node = dotted_name.pop()
+            dotted_name.append("%s[%s]" % (node, arg))
 
         if write_variable:
             self.write(".".join(dotted_name))

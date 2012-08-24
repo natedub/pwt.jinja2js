@@ -33,6 +33,7 @@ def load_and_compare(source_file, expected_file):
 
 
 def test_file_templates():
+    # test will run from either location
     directory = 'jinja2js/test_templates'
     if os.path.isfile('tests.py'):
         directory = 'test_templates'
