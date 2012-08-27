@@ -1047,12 +1047,16 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
 
 def generate(environment, name, filename, namespace="jinja2js"):
     """Generate the javascript source for jinja template."""
-
     src, path, uptodate = environment.loader.get_source(environment, filename)
-
     node = environment.parse(src)
 
     return _generate(node, environment, name, filename, namespace)
+
+
+def generate_from_string(environment, src, namespace="jinja2js"):
+    node = environment.parse(src)
+
+    return _generate(node, environment, "", "", namespace)
 
 
 def _generate(node, environment, name, filename, namespace):

@@ -29,23 +29,20 @@ Here a small example of a Jinja template:
 
 After compiling with jinja2js you get the following:
 
-    (function(jinja2js) {
-
-    jinja2js.print_users = function() {
-        var __data = jinja2support.parse_args(arguments, ['users']);
+    __ns.print_users = function() {
+        var __data = _.parse_args(arguments, ['users']);
         var __output = '';
         __output += '\n<ul>\n';
         var userList = __data.users;
         var userListLen = userList.length;
         for (var userIndex = 0; userIndex < userListLen; userIndex++) {
             var userData = userList[userIndex];
-            __output += '\n    <li><a href="' + userData.url + '">' + userData.username + '</a></li>\n';
+            __output += '\n    <li><a href="' + _.escape(userData.url) + '">' + _.escape(userData.username) + '</a></li>\n';
         }
         __output += '\n</ul>\n';
         return __output;
     };
-
-    })(window.jinja2js = window.jinja2js || {});
+    })(window.jinja2js = window.jinja2js || {}, jinja2support);
 
 
 Usage
