@@ -29,6 +29,7 @@ Here a small example of a Jinja template:
 
 After compiling with jinja2js you get the following:
 
+    (function(__ns, _) {
     __ns.print_users = function() {
         var __data = _.parse_args(arguments, ['users']);
         var __output = '';
