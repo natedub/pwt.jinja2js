@@ -24,7 +24,7 @@
             .replace(/\//g, '&#x2F;');
     };
 
-    jinja2support.in = function(value, collection) {
+    jinja2support.in_ = function(value, collection) {
         if (toString.call(collection) === '[object Array]') {
             if (indexOf) {
                 return indexOf.call(collection, value) > -1;

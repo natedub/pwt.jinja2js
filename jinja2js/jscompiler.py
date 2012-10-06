@@ -681,7 +681,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if len(node.ops) == 1 and op.op in LIST_OPERATORS:
             if op.op == 'notin':
                 self.write('!')
-            self.write('_.in(')
+            self.write('_.in_(')
             self.visit(node.expr, frame)
             self.write(', ')
             self.visit(op.expr, frame)
