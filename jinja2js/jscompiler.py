@@ -927,6 +927,14 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def visit_Assign(self, node, frame):
         # XXX - test that we don't override any variable names doing this
         self.newline(node)
+
+        local_ids = frame.identifiers.declared_locally
+        name = node.target.name
+
+        if name in local_ids and name not in frame.assigned_names:
+            frame.assigned_names.add(name)
+            self.write("var ")
+
         self.visit(node.target, frame)
         self.write(" = ")
         self.visit(node.node, frame)
