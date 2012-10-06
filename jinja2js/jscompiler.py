@@ -528,12 +528,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
             write_variable = True
 
         self.visit(node.node, frame, dotted_name)
-        self.visit(node.arg, frame, dotted_name)
 
-        if isinstance(node.arg, jinja2.nodes.Const):
-            arg = dotted_name.pop()
+        arg_name = []
+        self.visit(node.arg, frame, arg_name)
+
+        if isinstance(node.arg, jinja2.nodes.Slice):
+            dotted_name.extend(arg_name)
+        else:
             node = dotted_name.pop()
-            dotted_name.append("%s[%s]" % (node, arg))
+            dotted_name.append("%s[%s]" % (node, '.'.join(arg_name)))
 
         if write_variable:
             self.write(".".join(dotted_name))
