@@ -1,0 +1,54 @@
+{% macro for_loop_var_index(items) %}
+    {%- for i in  items -%}
+        {{ loop.index }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_index0(items) %}
+    {%- for i in  items -%}
+        {{ loop.index0 }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_revindex(items) %}
+    {%- for i in  items -%}
+        {{ loop.revindex }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_revindex0(items) %}
+    {%- for i in  items -%}
+        {{ loop.revindex0 }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_first(items) %}
+    {%- for i in  items -%}
+        {{ loop.first }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_last(items) %}
+    {%- for i in  items -%}
+        {{ loop.last }}
+    {%- endfor -%}
+{% endmacro %}
+
+
+{% macro for_loop_var_length(items) %}
+    {%- for i in  items -%}
+        {{ loop.length }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_cycle(items) %}
+    {%- for i in items -%}
+        {{ loop.cycle('odd', 'even') }}
+    {%- endfor -%}
+{% endmacro %}
+
+{% macro for_loop_var_cycle_vars(items, var1, var2) %}
+    {%- for i in items -%}
+        {{ loop.cycle(var1, var2) }}
+    {%- endfor -%}
+{% endmacro %}

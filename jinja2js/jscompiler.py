@@ -566,6 +566,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
                                      frame.forloop_buffer))
             elif node.attr == "length":
                 self.write("%sListLen" % frame.forloop_buffer)
+            elif node.attr == "cycle":
+                self.write('_.arg_getter(%sIndex)' % frame.forloop_buffer)
+                print frame.forloop_buffer
             else:
                 raise AttributeError("loop.%s not defined" % node.attr)
         else:
