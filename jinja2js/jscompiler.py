@@ -294,7 +294,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         if frame.toplevel:
             return
 
-        finalize = str  # unicode
+        finalize = unicode
 
         # try to evaluate as many chunks as possible into a static
         # string at compile time.
@@ -338,7 +338,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 if getattr(self.environment, "strip_html_whitespace", False):
                     item = [strip_html_whitespace(itemhtml)
                             for itemhtml in item]
-                self.write(repr("".join(item)))
+                self.write(repr("".join(item))[1:])
             else:
                 if start:
                     self.writeline_outputappend(item, frame)
@@ -566,6 +566,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
                                      frame.forloop_buffer))
             elif node.attr == "length":
                 self.write("%sListLen" % frame.forloop_buffer)
+            elif node.attr == "cycle":
+                self.write('_.arg_getter(%sIndex)' % frame.forloop_buffer)
+                print frame.forloop_buffer
             else:
                 raise AttributeError("loop.%s not defined" % node.attr)
         else:

@@ -52,4 +52,10 @@
         return !jinja2support.not(value);
     };
 
+    jinja2support.arg_getter = function(index) {
+        return function () {
+            return arguments[index % arguments.length];
+        };
+    };
+
 })(window.jinja2support = window.jinja2support || {});
