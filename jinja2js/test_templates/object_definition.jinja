@@ -13,3 +13,7 @@
 {% macro object_definition_with_quotes_in_key() -%}
     {% set a = {"'a.b'": 'b', '"b"': 'c', "b\"'": "b\"'", 'b\'"': 'b\'"'} %}
 {%- endmacro %}
+
+{% macro object_definition_with_numbers_in_key() -%}
+    {% set a = {1: 'b', 3: 'c'} %}
+{%- endmacro %}
