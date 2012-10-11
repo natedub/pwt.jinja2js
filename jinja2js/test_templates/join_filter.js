@@ -2,7 +2,7 @@
 __ns.join_filter_default = function() {
     var __data = _.parse_args(arguments, []);
     var __output = '';
-    __output += _.escape(['a', 'b', 'c'].join());
+    __output += _.escape(['a', 'b', 'c'].join(''));
     return __output;
 };
 

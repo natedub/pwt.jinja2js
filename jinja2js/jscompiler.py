@@ -1063,7 +1063,7 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
 def filter_join(generator, node, frame, separator=None):
     generator.visit(node.node, frame)
     if separator is None:
-        separator = u''
+        separator = "''"
     else:
         separator_value = []
         generator.visit(separator, frame, separator_value)
