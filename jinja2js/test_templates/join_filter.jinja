@@ -1,0 +1,19 @@
+{% macro join_filter_default() -%}
+    {{ ['a', 'b', 'c']|join }}
+{%- endmacro %}
+
+{% macro join_filter() -%}
+    {{ ['a', 'b', 'c']|join(',') }}
+{%- endmacro %}
+
+{% macro join_filter_var_arg(separator) -%}
+    {{ ['a', 'b', 'c']|join(separator) }}
+{%- endmacro %}
+
+{% macro join_filter_array_arg(separators, index) -%}
+    {{ ['a', 'b', 'c']|join(separators[index]) }}
+{%- endmacro %}
+
+{% macro join_filter_complex_arg(config, type) -%}
+    {{ ['a', 'b', 'c']|join(config.separator[type].value) }}
+{%- endmacro %}
