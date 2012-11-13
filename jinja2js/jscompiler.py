@@ -1060,6 +1060,18 @@ def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
         generator.write(" / %s" % precision)
 
 
+@register_filter('join')
+def filter_join(generator, node, frame, separator=None):
+    generator.visit(node.node, frame)
+    if separator is None:
+        separator = "''"
+    else:
+        separator_value = []
+        generator.visit(separator, frame, separator_value)
+        separator = '.'.join(separator_value)
+    generator.write('.join(%s)' % separator)
+
+
 def generate(environment, name, filename, namespace="jinja2js"):
     """Generate the javascript source for jinja template."""
     src, path, uptodate = environment.loader.get_source(environment, filename)
