@@ -3,13 +3,50 @@
     var has = Object.prototype.hasOwnProperty;
     var indexOf = Array.prototype.indexOf;
 
-    jinja2support.parse_args = function(args, argspec) {
+    jinja2support.parse_args = function(args, argspec, kwargspec) {
         var data = {};
-        if (typeof(args[args.length - 1]) === 'function') {
+        var args_len = args.length;
+
+        if (typeof(args[args_len - 1]) === 'function') {
             data.__caller = args[args.length - 1];
+            args_len--;
         }
-        for (var i = 0; i < argspec.length; i++) {
+
+        var last_arg = args[args_len - 1];
+        if (toString.call(last_arg) === '[object Object]' &&
+            has.call(last_arg, '__jinja2_kwargs__')) {
+
+            args_len--;
+            for (var i = 0, l = kwargspec.length; i < l; i++) {
+                var key = kwargspec[i][0];
+                var value = kwargspec[i][1];
+
+                data[key] = has.call(last_arg, key) ? last_arg[key] : value;
+            }
+        } else {
+            for (var i = 0, l = kwargspec.length; i < l; i++) {
+                var key = kwargspec[i][0];
+                var value = kwargspec[i][1];
+
+                data[key] = value;
+            }
+        }
+
+        if (args_len < argspec.length) {
+            throw 'Not enough arguments supplied, expecting ' +
+                argspec.length + ': [' + argspec.join(', ') + ']';
+        }
+
+        for (var i = 0, l = argspec.length; i < l; i++) {
             data[argspec[i]] = args[i];
+        }
+
+        if (args_len > argspec.length) {
+            for (var i = 0, l = args_len - argspec.length; i < l; i++) {
+                var key = kwargspec[i][0];
+
+                data[key] = args[argspec.length + i];
+            }
         }
         return data;
     };
@@ -59,3 +96,103 @@
     };
 
 })(window.jinja2support = window.jinja2support || {});
+
+
+(function(jinja2filters, undefined) {
+
+jinja2filters.string = function(str) {
+    return '' + str;
+}
+
+jinja2filters['default'] = function() {
+    var kwargspec = [['default_value', ''], ['boolean', true]];
+    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+
+    if (args.value === undefined || (jinja2support.not(args.value) &&
+            args['boolean'])) {
+        return args.default_value;
+    } else {
+        return args.value;
+    }
+}
+
+jinja2filters.capitalize = function(str) {
+    return str.substring(0, 1).toUpperCase() + str.substring(1);
+}
+
+jinja2filters.last = function(seq) {
+    return seq[seq.length - 1];
+}
+
+jinja2filters.length = function(seq) {
+    return seq.length;
+}
+
+jinja2filters.replace = function() {
+    var kwargspec = [['count', null]];
+    var args = jinja2support.parse_args(arguments, ['str', 'old', 'new'],
+            kwargspec);
+    var replaced = args.str;
+
+    if (args.count === null) {
+        while (replaced.indexOf(args.old) !== -1) {
+            replaced = replaced.replace(args.old, args['new']);
+        }
+    } else {
+        for (var i = 0; i < args.count; i++) {
+            replaced = replaced.replace(args.old, args['new']);
+        }
+    }
+    return replaced
+}
+
+jinja2filters.round = function() {
+    var kwargspec = [['precision', 0], ['method', 'common']];
+    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+
+    var precision = Math.pow(10, args.precision);
+    var val = args.value * precision;
+    var method = Math.round
+
+    if (args.method === 'ceil') {
+        method = Math.ceil;
+    } else if (args.method === 'floor') {
+        method = Math.floor;
+    }
+
+    return method(val) / precision;
+}
+
+jinja2filters.join = function() {
+    var kwargspec = [['d', ''], ['attribute', null]];
+    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+
+    var list = args.value;
+    if (args.attribute != null) {
+        list = [];
+        for (var i = 0, l = args.value.length; i < l; i++) {
+            list.push(args.value[i][args.attribute]);
+        }
+    }
+
+    return list.join(args.d);
+}
+
+jinja2filters.truncate = function() {
+    var kwargspec = [['length', 255], ['killwords', false], ['end', '...']];
+    var args = jinja2support.parse_args(arguments, ['s'], kwargspec);
+    var len = args['length'];
+
+    if (args.s.length < len) {
+        return args.s;
+    }
+
+    if (!args.killwords) {
+        var index = args.s.substring(len).indexOf(' ');
+        len = index > -1 ? len + index : len;
+    }
+
+    return args.s.substring(0, len) + args.end;
+}
+
+})(window.jinja2filters = window.jinja2filters || {});

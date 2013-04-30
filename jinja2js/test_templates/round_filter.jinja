@@ -1,0 +1,11 @@
+{% macro round_num(num) %}
+{{ num|round }}
+{% endmacro %}
+
+{% macro round_num_kwarg(num) %}
+{{ num|round(precision=2) }}
+{% endmacro %}
+
+{% macro round_num_kwargs(num) %}
+{{ num|round(precision=2, method='floor') }}
+{% endmacro %}

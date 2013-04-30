@@ -390,16 +390,21 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 self.write_htmlescape_end(node, frame)
             else:
                 self.visit(node.node, frame)
-        elif node.name in FILTERS:
-            kwargs = {}
-            for kwarg in node.kwargs:
-                kwargs[kwarg.key] = kwarg.value
-
-            FILTERS[node.name](self, node, frame, *node.args, **kwargs)
         else:
-            raise jinja2.compiler.TemplateAssertionError(
-                "Filter does not exist: '%s'" % node.name,
-                node.lineno, self.name, self.filename)
+            self.write('jinja2filters.')
+            self.write(node.name)
+            self.write('(')
+            self.visit(node.node, frame)
+            for arg in node.args:
+                self.write(', ')
+                self.visit(arg, frame)
+            if node.kwargs:
+                self.write(", {'__jinja2_kwargs__': true")
+                for kwarg in node.kwargs:
+                    self.write(", '" + kwarg.key + "': ")
+                    self.visit(kwarg.value, frame)
+                self.write('}')
+            self.write(')')
 
     def visit_Const(self, node, frame, dotted_name=None):
         # XXX - need to know the JavaScript ins and out here.
@@ -967,109 +972,6 @@ def strip_html_whitespace(value):
     value = _pre_tag_whitespace.sub('<', value)
     value = _post_tag_whitespace.sub('>', value)
     return _excess_whitespace.sub(' ', value)
-
-FILTERS = {}
-
-
-class register_filter(object):
-
-    def __init__(self, name):
-        self.name = name
-
-    def __call__(self, func):
-        FILTERS[self.name] = func
-
-        return func
-
-
-@register_filter("string")
-def filter_string(generator, node, frame):
-    generator.write("'' + ")
-    generator.visit(node.node, frame)
-
-
-@register_filter("default")
-def filter_default(generator, node, frame, default_value=""):
-    generator.write("(")
-    generator.visit(node.node, frame)
-    generator.write(" ? ")
-    generator.visit(node.node, frame)
-    generator.write(" : ")
-    generator.visit(default_value, frame)
-    generator.write(")")
-
-
-@register_filter("truncate")
-def filter_truncate(generator, node, frame, length):
-    generator.visit(node.node, frame)
-    generator.write(".substring(0, ")
-    generator.visit(length, frame)
-    generator.write(")")
-
-
-@register_filter("capitalize")
-def filter_capitalize(generator, node, frame):
-    generator.visit(node.node, frame)
-    generator.write(".substring(0, 1).toUpperCase()")
-    generator.write_outputappend_add(node, frame)
-    generator.visit(node.node, frame)
-    generator.write(".substring(1)")
-
-
-@register_filter("last")
-def filter_last(generator, node, frame):
-    generator.visit(node.node, frame)
-    generator.write(".pop()")
-
-
-@register_filter("length")
-def filter_length(generator, node, frame):
-    generator.visit(node.node, frame)
-    generator.write(".length")
-
-
-@register_filter("replace")
-def filter_replace(generator, node, frame, old, new):
-    generator.visit(node.node, frame)
-    generator.write(".replace(")
-    generator.visit(old, frame)
-    generator.write(", ")
-    generator.visit(new, frame)
-    generator.write(")")
-
-
-@register_filter("round")
-def filter_round(generator, node, frame, precision=jinja2.nodes.Const(0)):
-    # get precision
-    precision_value = []
-    generator.visit(precision, frame, precision_value)
-    precision = ".".join(precision_value)
-    try:
-        precision = 10 ** int(precision)
-    except ValueError:
-        # assume we are a parameter or declared variable and raise to power
-        # of 10
-        precision = "Math.pow(10, %s)" % precision
-
-    generator.write("Math.round(")
-    generator.visit(node.node, frame)
-    if precision > 1:
-        generator.write(" * %s" % precision)
-    generator.write(")")
-    if precision > 1:
-        generator.write(" / %s" % precision)
-
-
-@register_filter('join')
-def filter_join(generator, node, frame, separator=None):
-    generator.visit(node.node, frame)
-    if separator is None:
-        separator = "''"
-    else:
-        separator_value = []
-        generator.visit(separator, frame, separator_value)
-        separator = '.'.join(separator_value)
-    generator.write('.join(%s)' % separator)
 
 
 def generate(environment, name, filename, namespace="jinja2js"):

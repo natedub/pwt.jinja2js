@@ -6,6 +6,10 @@
     {{ ['a', 'b', 'c']|join(',') }}
 {%- endmacro %}
 
+{% macro join_filter_kwarg() -%}
+    {{ ['a', 'b', 'c']|join(d=',') }}
+{%- endmacro %}
+
 {% macro join_filter_var_arg(separator) -%}
     {{ ['a', 'b', 'c']|join(separator) }}
 {%- endmacro %}
