@@ -2,15 +2,16 @@ import re
 
 from cStringIO import StringIO
 
-from jinja2.visitor import NodeVisitor
 import jinja2.nodes
-import jinja2.compiler
+
+from jinja2.compiler import TemplateAssertionError
+from jinja2.visitor import NodeVisitor
 from jinja2.utils import escape
 
 
 UNARYOP = {
     "not ": "!"
-    }
+}
 
 OPERATORS = {
     "eq":    "==",
@@ -19,7 +20,7 @@ OPERATORS = {
     "gteq":  ">=",
     "lt":    "<",
     "lteq":  "<=",
-    }
+}
 
 LIST_OPERATORS = ('in', 'notin')
 
@@ -447,9 +448,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
             elif isinstance(item.key, jinja2.nodes.Name):
                 self.write(item.key.name)
             else:
-                raise jinja2.compiler.TemplateAssertionError(
-                    "Dictionary keys must be constant.",
-                    item.key.lineno, self.name, self.filename)
+                msg = "Dictionary keys must be constant."
+                raise TemplateAssertionError(msg, item.key.lineno, self.name,
+                                             self.filename)
 
             self.write(": ")
             self.visit(item.value, frame)
@@ -495,9 +496,9 @@ class MacroCodeGenerator(BaseCodeGenerator):
             frame.assigned_names.add(ids.imports[name])
         else:
             if dotted_name is None:
-                raise jinja2.compiler.TemplateAssertionError(
-                    "Variable '%s' not defined" % name,
-                    node.lineno, self.name, self.filename)
+                msg = "Variable '%s' not defined" % name
+                raise TemplateAssertionError(msg, node.lineno, self.name,
+                                             self.filename)
 
             output = name
 
@@ -558,19 +559,16 @@ class MacroCodeGenerator(BaseCodeGenerator):
             elif node.attr == "index":
                 self.write("%sIndex + 1" % frame.forloop_buffer)
             elif node.attr == "revindex0":
-                self.write("%sListLen - %sIndex"
-                                  % (frame.forloop_buffer,
-                                     frame.forloop_buffer))
+                self.write("%sListLen - %sIndex" %
+                           (frame.forloop_buffer, frame.forloop_buffer))
             elif node.attr == "revindex":
-                self.write("%sListLen - %sIndex - 1"
-                                  % (frame.forloop_buffer,
-                                     frame.forloop_buffer))
+                self.write("%sListLen - %sIndex - 1" %
+                           (frame.forloop_buffer, frame.forloop_buffer))
             elif node.attr == "first":
                 self.write("%sIndex == 0" % frame.forloop_buffer)
             elif node.attr == "last":
-                self.write("%sIndex == (%sListLen - 1)"
-                                  % (frame.forloop_buffer,
-                                     frame.forloop_buffer))
+                self.write("%sIndex == (%sListLen - 1)" %
+                           (frame.forloop_buffer, frame.forloop_buffer))
             elif node.attr == "length":
                 self.write("%sListLen" % frame.forloop_buffer)
             elif node.attr == "cycle":
@@ -750,9 +748,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
             loop_frame.forloop_buffer = node.target.name
         for name in node.find_all(jinja2.nodes.Name):
             if name.ctx == "store" and name.name == "loop":
-                raise jinja2.compiler.TemplateAssertionError(
-                    "Can't assign to special loop variable in for-loop target",
-                    name.lineno, self.name, self.filename)
+                msg = ("Can't assign to special loop variable in for-loop "
+                       "target")
+                raise TemplateAssertionError(msg, name.lineno, self.name,
+                                             self.filename)
 
         self.writeline("var %sList = " % node.target.name)
         self.visit(node.iter, loop_frame)
@@ -769,10 +768,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
                        % {"name": node.target.name})
         self.indent()
 
-        self.writeline("var %(name)sData = %(name)sList[%(name)sIndex];"
-                              % {"name": node.target.name})
-        loop_frame.reassigned_names[node.target.name] =\
-                "%sData" % node.target.name
+        self.writeline("var %(name)sData = %(name)sList[%(name)sIndex];" %
+                       {"name": node.target.name})
+
+        target_name = "%sData" % node.target.name
+        loop_frame.reassigned_names[node.target.name] = target_name
         self.blockvisit(node.body, loop_frame)
         self.outdent()
         self.writeline("}")
@@ -805,11 +805,12 @@ class MacroCodeGenerator(BaseCodeGenerator):
              func_frame.identifiers.declared_parameter)
         )
         if overriden_closure_vars:
-            raise jinja2.compiler.TemplateAssertionError(
-                "It's not possible to set and access variables "
-                "derived from an outer scope! (affects: %s)" % (
-                    ", ".join(sorted(overriden_closure_vars)), node.lineno),
-                    node.lineno, self.name, self.filename)
+            tmpl = ("It's not possible to set and access variables "
+                    "derived from an outer scope! (affects: %s)")
+            msg = tmpl % (", ".join(sorted(overriden_closure_vars)),
+                          node.lineno)
+            raise TemplateAssertionError(msg, node.lineno, self.name,
+                                         self.filename)
 
         # remove variables from a closure from the frame's undeclared
         # identifiers.
@@ -834,7 +835,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writeline("var __data = _.parse_args(arguments, [")
         js_args = ["'%s'" % arg.name for arg in node.args]
         self.write(", ".join(js_args))
-        self.write("]);")
+        self.write("], []);")
         self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
         self.writeline_endoutput(node, frame)
@@ -872,14 +873,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     def signature(self, node, frame, forward_caller):
         if node.args and node.kwargs:
-            raise jinja2.compiler.TemplateAssertionError(
-                "Function call with positional and keyword arguments "
-                "are not allowed", node.lineno, self.name, self.filename)
+            msg = ("Function call with positional and keyword arguments "
+                   "are not allowed")
+            raise TemplateAssertionError(msg, node.lineno, self.name,
+                                         self.filename)
 
         if node.dyn_args or node.dyn_kwargs:
-            raise jinja2.compiler.TemplateAssertionError(
-                "JS Does not support positional or keyword arguments",
-                node.lineno, self.name, self.filename)
+            msg = "JS Does not support positional or keyword arguments"
+            raise TemplateAssertionError(msg, node.lineno, self.name,
+                                         self.filename)
 
         if node.args:
             # We have only positional arguments here. In this case we assume
@@ -923,9 +925,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # positional arguments are calls to javascript functions. This
         # allows you to call differently named functions in the client JS
         # than when rendering a template on the server.
-        if node.args and not node.kwargs \
-               and func_name in getattr(self.environment, "js_func_aliases",
-                                        []):
+        aliases = getattr(self.environment, "js_func_aliases", [])
+        if node.args and not node.kwargs and func_name in aliases:
             func_name = self.environment.js_func_aliases[func_name]
 
         # function signature

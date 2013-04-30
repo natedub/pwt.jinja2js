@@ -1,6 +1,6 @@
 (function(__ns, _) {
 __ns.test_assignment = function() {
-    var __data = _.parse_args(arguments, []);
+    var __data = _.parse_args(arguments, [], []);
     var __output = '';
     __output += '\n';
     var value = 1;

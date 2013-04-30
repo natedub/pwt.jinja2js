@@ -1,6 +1,6 @@
 (function(__ns, _) {
 __ns.for_loop_var_index = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -12,7 +12,7 @@ __ns.for_loop_var_index = function() {
 };
 
 __ns.for_loop_var_index0 = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -24,7 +24,7 @@ __ns.for_loop_var_index0 = function() {
 };
 
 __ns.for_loop_var_revindex = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -36,7 +36,7 @@ __ns.for_loop_var_revindex = function() {
 };
 
 __ns.for_loop_var_revindex0 = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -48,7 +48,7 @@ __ns.for_loop_var_revindex0 = function() {
 };
 
 __ns.for_loop_var_first = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -60,7 +60,7 @@ __ns.for_loop_var_first = function() {
 };
 
 __ns.for_loop_var_last = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -73,7 +73,7 @@ __ns.for_loop_var_last = function() {
 
 
 __ns.for_loop_var_length = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -85,7 +85,7 @@ __ns.for_loop_var_length = function() {
 };
 
 __ns.for_loop_var_cycle = function() {
-    var __data = _.parse_args(arguments, ['items']);
+    var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;
@@ -97,7 +97,7 @@ __ns.for_loop_var_cycle = function() {
 };
 
 __ns.for_loop_var_cycle_vars = function() {
-    var __data = _.parse_args(arguments, ['items', 'var1', 'var2']);
+    var __data = _.parse_args(arguments, ['items', 'var1', 'var2'], []);
     var __output = '';
     var iList = __data.items;
     var iListLen = iList.length;

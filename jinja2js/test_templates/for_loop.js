@@ -1,6 +1,6 @@
 (function(__ns, _) {
 __ns.forinlist = function() {
-    var __data = _.parse_args(arguments, ['jobs']);
+    var __data = _.parse_args(arguments, ['jobs'], []);
     var __output = '';
     var jobList = __data.jobs;
     var jobListLen = jobList.length;

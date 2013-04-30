@@ -1,7 +1,7 @@
 
 (function(__ns, _) {
 __ns.test_named_access = function() {
-    var __data = _.parse_args(arguments, ['types', 'allowed_types']);
+    var __data = _.parse_args(arguments, ['types', 'allowed_types'], []);
     var __output = '';
     __output += '\n';
     var tList = __data.allowed_types;
@@ -15,7 +15,7 @@ __ns.test_named_access = function() {
 };
 
 __ns.test_named_access_sub_value = function() {
-    var __data = _.parse_args(arguments, ['types', 'allowed_types']);
+    var __data = _.parse_args(arguments, ['types', 'allowed_types'], []);
     var __output = '';
     __output += '\n';
     var tList = __data.allowed_types;
@@ -29,7 +29,7 @@ __ns.test_named_access_sub_value = function() {
 };
 
 __ns.test_named_access_assigned_value = function() {
-    var __data = _.parse_args(arguments, ['allowed_types']);
+    var __data = _.parse_args(arguments, ['allowed_types'], []);
     var __output = '';
     __output += '\n';
     var types = {'h1': 'H1'};
