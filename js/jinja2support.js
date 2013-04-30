@@ -90,7 +90,7 @@
     };
 
     jinja2support.arg_getter = function(index) {
-        return function () {
+        return function() {
             return arguments[index % arguments.length];
         };
     };
@@ -102,7 +102,7 @@
 
 jinja2filters.string = function(str) {
     return '' + str;
-}
+};
 
 jinja2filters['default'] = function() {
     var kwargspec = [['default_value', ''], ['boolean', true]];
@@ -114,19 +114,19 @@ jinja2filters['default'] = function() {
     } else {
         return args.value;
     }
-}
+};
 
 jinja2filters.capitalize = function(str) {
     return str.substring(0, 1).toUpperCase() + str.substring(1);
-}
+};
 
 jinja2filters.last = function(seq) {
     return seq[seq.length - 1];
-}
+};
 
 jinja2filters.length = function(seq) {
     return seq.length;
-}
+};
 
 jinja2filters.replace = function() {
     var kwargspec = [['count', null]];
@@ -143,8 +143,8 @@ jinja2filters.replace = function() {
             replaced = replaced.replace(args.old, args['new']);
         }
     }
-    return replaced
-}
+    return replaced;
+};
 
 jinja2filters.round = function() {
     var kwargspec = [['precision', 0], ['method', 'common']];
@@ -152,7 +152,7 @@ jinja2filters.round = function() {
 
     var precision = Math.pow(10, args.precision);
     var val = args.value * precision;
-    var method = Math.round
+    var method = Math.round;
 
     if (args.method === 'ceil') {
         method = Math.ceil;
@@ -161,7 +161,7 @@ jinja2filters.round = function() {
     }
 
     return method(val) / precision;
-}
+};
 
 jinja2filters.join = function() {
     var kwargspec = [['d', ''], ['attribute', null]];
@@ -176,7 +176,7 @@ jinja2filters.join = function() {
     }
 
     return list.join(args.d);
-}
+};
 
 jinja2filters.truncate = function() {
     var kwargspec = [['length', 255], ['killwords', false], ['end', '...']];
@@ -193,6 +193,6 @@ jinja2filters.truncate = function() {
     }
 
     return args.s.substring(0, len) + args.end;
-}
+};
 
 })(window.jinja2filters = window.jinja2filters || {});
