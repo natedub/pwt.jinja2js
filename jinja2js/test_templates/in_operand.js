@@ -16,4 +16,4 @@ __ns.test_not_in = function() {
     }
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

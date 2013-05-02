@@ -263,7 +263,7 @@ class CodeGenerator(BaseCodeGenerator):
 
         self.writeline("(function(__ns, _) {\n")
         self.blockvisit(node.body, frame)
-        self.writeline("})(window.%s = window.%s || {}, jinja2support);" %
+        self.writeline("})(this.%s = this.%s || {}, jinja2support);" %
                        (self.namespace, self.namespace))
 
     def visit_Import(self, node, frame):

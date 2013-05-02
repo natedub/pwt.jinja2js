@@ -19,5 +19,5 @@ __ns.round_num_kwargs = function() {
     __output += '\n' + _.escape(jinja2filters.round(__data.num, {'__jinja2_kwargs__': true, 'precision': 2, 'method': 'floor'})) + '\n';
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);
 

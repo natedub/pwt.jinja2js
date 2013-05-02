@@ -5,4 +5,4 @@ __ns.unicode_in_macro = function() {
     __output += '\u0442\u0435\u0441\u0442';
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

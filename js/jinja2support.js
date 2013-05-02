@@ -95,7 +95,7 @@
         };
     };
 
-})(window.jinja2support = window.jinja2support || {});
+})(this.jinja2support = this.jinja2support || {});
 
 
 (function(jinja2filters, undefined) {
@@ -195,4 +195,4 @@ jinja2filters.truncate = function() {
     return args.s.substring(0, len) + args.end;
 };
 
-})(window.jinja2filters = window.jinja2filters || {});
+})(this.jinja2filters = this.jinja2filters || {});

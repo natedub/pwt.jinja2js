@@ -40,4 +40,4 @@ __ns.join_filter_complex_arg = function() {
     __output += _.escape(jinja2filters.join(['a', 'b', 'c'], __data.config.separator[__data.type].value));
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

@@ -5,4 +5,4 @@ __ns.test_array = function() {
     __output += _.escape(__data.items[0]);
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

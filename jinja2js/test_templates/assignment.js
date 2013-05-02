@@ -9,4 +9,4 @@ __ns.test_assignment = function() {
     __output += '\n' + _.escape(value) + '\n';
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

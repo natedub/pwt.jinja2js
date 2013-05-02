@@ -5,4 +5,4 @@ __ns.trunc = function() {
     __output += _.escape(jinja2filters.string(__data.s));
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

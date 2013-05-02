@@ -17,4 +17,4 @@ __ns.render = function() {
     __output += __ns.render_dialog('box', null, func_caller);
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

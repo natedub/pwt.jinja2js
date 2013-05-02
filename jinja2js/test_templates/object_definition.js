@@ -33,4 +33,4 @@ __ns.object_definition_with_numbers_in_key = function() {
     var a = {1: 'b', 3: 'c'};
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);

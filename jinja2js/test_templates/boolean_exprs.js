@@ -34,4 +34,4 @@ __ns.test_alt_xor = function() {
     }
     return __output;
 };
-})(window.jinja2js = window.jinja2js || {}, jinja2support);
+})(this.jinja2js = this.jinja2js || {}, jinja2support);
