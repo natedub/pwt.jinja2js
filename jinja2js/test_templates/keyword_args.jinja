@@ -1,0 +1,23 @@
+{% macro default_macro(foo="bar") %}
+{{foo}}
+{% endmacro %}
+
+{% macro mixed_macro(foo, bar="baz") %}
+{{foo}}
+{% endmacro %}
+
+{% macro test_call_default_macro_with_arg() %}
+{{default_macro('hello')}}
+{% endmacro %}
+
+{% macro test_call_default_macro_with_kwarg() %}
+{{default_macro(foo='hello')}}
+{% endmacro %}
+
+{% macro test_call_mixed_macro_with_arg() %}
+{{mixed_macro('hello')}}
+{% endmacro %}
+
+{% macro test_call_mixed_macro_with_kwarg() %}
+{{mixed_macro('hello', bar='goodbye')}}
+{% endmacro %}

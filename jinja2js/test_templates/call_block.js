@@ -14,7 +14,7 @@ __ns.render = function() {
         __output += 'Hello ' + _.escape(__data.name) + '!';
         return __output;
     };
-    __output += __ns.render_dialog('box', null, func_caller);
+    __output += __ns.render_dialog({'__jinja2_kwargs__': true, 'type': 'box'}, func_caller);
     return __output;
 };
 })(this.jinja2js = this.jinja2js || {}, jinja2support);

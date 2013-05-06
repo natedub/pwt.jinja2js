@@ -832,10 +832,26 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.writeline("__ns.%s = function() {" % name)
         self.indent()
 
+        default_start = len(node.args) - len(node.defaults)
+        args = node.args[:default_start]
+        default_args = node.args[default_start:]
+
         self.writeline("var __data = _.parse_args(arguments, [")
-        js_args = ["'%s'" % arg.name for arg in node.args]
+        js_args = ["'%s'" % arg.name for arg in args]
         self.write(", ".join(js_args))
-        self.write("], []);")
+        self.write("], [")
+
+        start_loop = True
+        for arg, value in zip(default_args, node.defaults):
+            if not start_loop:
+                self.write(', ')
+            self.write("['%s', " % arg.name)
+            self.visit(value, frame)
+            self.write("]")
+            start_loop = False
+
+        self.write("]);")
+
         self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
         self.writeline_endoutput(node, frame)
@@ -872,20 +888,12 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.write(";")
 
     def signature(self, node, frame, forward_caller):
-        if node.args and node.kwargs:
-            msg = ("Function call with positional and keyword arguments "
-                   "are not allowed")
-            raise TemplateAssertionError(msg, node.lineno, self.name,
-                                         self.filename)
-
         if node.dyn_args or node.dyn_kwargs:
             msg = "JS Does not support positional or keyword arguments"
             raise TemplateAssertionError(msg, node.lineno, self.name,
                                          self.filename)
 
         if node.args:
-            # We have only positional arguments here. In this case we assume
-            # that we have an ordinary Java Script function we wish to call
             start_arg = True
             for arg in node.args:
                 if not start_arg:
@@ -893,23 +901,16 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 self.visit(arg, frame)
                 start_arg = False
 
-            # Since this is a ordinary call bail out
-            return
-
-        # Now assume that we are calling an other macro
-        # XXX - we should be able test this by looking up the environment to
-        # see if that is the case.
-
-        start_kw = True
-        for kwarg in node.kwargs:
-            if not start_kw:
+        if node.kwargs:
+            if node.args:
                 self.write(", ")
-            self.visit(kwarg.value, frame)
-            start_kw = False
+            self.write("{'__jinja2_kwargs__': true")
+            for kwarg in node.kwargs:
+                self.write(", '%s': " % kwarg.key)
+                self.visit(kwarg.value, frame)
+            self.write("}")
 
         if forward_caller is not None:
-            self.write(", null")
-
             self.write(", ")
             self.write(forward_caller)
 

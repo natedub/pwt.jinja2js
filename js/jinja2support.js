@@ -3,6 +3,19 @@
     var has = Object.prototype.hasOwnProperty;
     var indexOf = Array.prototype.indexOf;
 
+    function object_matches_kwargspec(obj, kwargspec) {
+        var keys = [];
+        for (var i = 0, l = kwargspec.length; i < l; i++) {
+            keys.push(kwargspec[i][0]);
+        }
+        for (key in obj) {
+            if (has.call(obj, key) && !jinja2support.in_(key, obj)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     jinja2support.parse_args = function(args, argspec, kwargspec) {
         var data = {};
         var args_len = args.length;
@@ -14,7 +27,8 @@
 
         var last_arg = args[args_len - 1];
         if (toString.call(last_arg) === '[object Object]' &&
-            has.call(last_arg, '__jinja2_kwargs__')) {
+            (has.call(last_arg, '__jinja2_kwargs__') ||
+             object_matches_kwargspec(last_arg, kwargspec))) {
 
             args_len--;
             for (var i = 0, l = kwargspec.length; i < l; i++) {
@@ -72,7 +86,7 @@
                 }
             }
         }
-        return value in collection;
+        return has.call(collection, value);
     };
 
     jinja2support.not = function(value) {
@@ -98,7 +112,7 @@
 })(this.jinja2support = this.jinja2support || {});
 
 
-(function(jinja2filters, undefined) {
+(function(jinja2filters, _, undefined) {
 
 jinja2filters.string = function(str) {
     return '' + str;
@@ -106,9 +120,9 @@ jinja2filters.string = function(str) {
 
 jinja2filters['default'] = function() {
     var kwargspec = [['default_value', ''], ['boolean', true]];
-    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+    var args = _.parse_args(arguments, ['value'], kwargspec);
 
-    if (args.value === undefined || (jinja2support.not(args.value) &&
+    if (args.value === undefined || (_.not(args.value) &&
             args['boolean'])) {
         return args.default_value;
     } else {
@@ -130,7 +144,7 @@ jinja2filters.length = function(seq) {
 
 jinja2filters.replace = function() {
     var kwargspec = [['count', null]];
-    var args = jinja2support.parse_args(arguments, ['str', 'old', 'new'],
+    var args = _.parse_args(arguments, ['str', 'old', 'new'],
             kwargspec);
     var replaced = args.str;
 
@@ -148,7 +162,7 @@ jinja2filters.replace = function() {
 
 jinja2filters.round = function() {
     var kwargspec = [['precision', 0], ['method', 'common']];
-    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+    var args = _.parse_args(arguments, ['value'], kwargspec);
 
     var precision = Math.pow(10, args.precision);
     var val = args.value * precision;
@@ -165,7 +179,7 @@ jinja2filters.round = function() {
 
 jinja2filters.join = function() {
     var kwargspec = [['d', ''], ['attribute', null]];
-    var args = jinja2support.parse_args(arguments, ['value'], kwargspec);
+    var args = _.parse_args(arguments, ['value'], kwargspec);
 
     var list = args.value;
     if (args.attribute != null) {
@@ -180,7 +194,7 @@ jinja2filters.join = function() {
 
 jinja2filters.truncate = function() {
     var kwargspec = [['length', 255], ['killwords', false], ['end', '...']];
-    var args = jinja2support.parse_args(arguments, ['s'], kwargspec);
+    var args = _.parse_args(arguments, ['s'], kwargspec);
     var len = args['length'];
 
     if (args.s.length < len) {
@@ -195,4 +209,4 @@ jinja2filters.truncate = function() {
     return args.s.substring(0, len) + args.end;
 };
 
-})(this.jinja2filters = this.jinja2filters || {});
+})(this.jinja2filters = this.jinja2filters || {}, jinja2support);
