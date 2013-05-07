@@ -9,19 +9,25 @@ This version is branched and heavily modified from
 [mkerrin/pwt.jinja2ja](https://github.com/mkerrin/pwt.jinja2js), with many
 thanks to Michael Kerrin for doing the heavey lifting.
 
-The notable difference with this version is the lack dependencies on external
-javascript libraries. A single small javascript support file is included
-with the project.
+### The notable difference with this version:
+
+- Lack dependencies on external javascript libraries
+- A single small javascript support file is included with the project
+- Full support for key word arguments
+- Python compatible boolean equivalents, such as empty list, objects and
+  zeros treated as `False`.
 
 Nutshell
 --------
 
 Here a small example of a Jinja template:
 
-    {% macro print_users(users) %}
+    {% macro print_users(users, show_names=False) %}
     <ul>
     {% for user in users %}
-        <li><a href="{{ user.url }}">{{ user.username }}</a></li>
+        <li>
+        {% if show_names %}{{ user.name }}: {% endif %}
+        <a href="{{ user.url }}">{{ user.username }}</a></li>
     {% endfor %}
     </ul>
     {% endmacro %}
@@ -30,21 +36,25 @@ Here a small example of a Jinja template:
 After compiling with jinja2js you get the following:
 
     (function(__ns, _) {
+
     __ns.print_users = function() {
-        var __data = _.parse_args(arguments, ['users']);
+        var __data = _.parse_args(arguments, ['users'], [['show_names', false]]);
         var __output = '';
         __output += '\n<ul>\n';
         var userList = __data.users;
         var userListLen = userList.length;
         for (var userIndex = 0; userIndex < userListLen; userIndex++) {
             var userData = userList[userIndex];
-            __output += '\n    <li><a href="' + _.escape(userData.url) + '">' + _.escape(userData.username) + '</a></li>\n';
+            __output += '\n    <li>\n    ';
+            if (_.truth(__data.show_names)) {
+                __output += userData.name + ': ';
+            }
+            __output += '\n    <a href="' + userData.url + '">' + userData.username + '</a></li>\n';
         }
         __output += '\n</ul>\n';
         return __output;
     };
-    })(window.jinja2js = window.jinja2js || {}, jinja2support);
-
+    })(this.jinja2js = this.jinja2js || {}, jinja2support);
 
 Usage
 =====
