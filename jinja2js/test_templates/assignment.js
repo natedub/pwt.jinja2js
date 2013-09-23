@@ -1,5 +1,6 @@
 (function(__ns, _) {
-__ns.test_assignment = function() {
+var __this = {};
+__this.test_assignment = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
     __output += '\n';
@@ -9,4 +10,5 @@ __ns.test_assignment = function() {
     __output += '\n' + _.escape(value) + '\n';
     return __output;
 };
+__ns['assignment'] = __this;
 })(this.jinja2js = this.jinja2js || {}, jinja2support);

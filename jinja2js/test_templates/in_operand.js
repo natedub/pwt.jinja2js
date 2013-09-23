@@ -1,5 +1,6 @@
 (function(__ns, _) {
-__ns.test_in = function() {
+var __this = {};
+__this.test_in = function() {
     var __data = _.parse_args(arguments, ['name'], []);
     var __output = '';
     if (_.in_(__data.name, ['bob', 'john'])) {
@@ -8,7 +9,7 @@ __ns.test_in = function() {
     return __output;
 };
 
-__ns.test_not_in = function() {
+__this.test_not_in = function() {
     var __data = _.parse_args(arguments, ['name'], []);
     var __output = '';
     if (!_.in_(__data.name, ['bob', 'john'])) {
@@ -16,4 +17,5 @@ __ns.test_not_in = function() {
     }
     return __output;
 };
+__ns['in_operand'] = __this;
 })(this.jinja2js = this.jinja2js || {}, jinja2support);

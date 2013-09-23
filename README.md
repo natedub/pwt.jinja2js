@@ -15,7 +15,8 @@ thanks to Michael Kerrin for doing the heavey lifting.
 - A single small javascript support file is included with the project
 - Full support for key word arguments
 - Python compatible boolean equivalents, such as empty list, objects and
-  zeros treated as `False`.
+  zeros treated as `False`
+- Support for importing other javascript macro templates
 
 Nutshell
 --------
@@ -36,8 +37,8 @@ Here a small example of a Jinja template:
 After compiling with jinja2js you get the following:
 
     (function(__ns, _) {
-
-    __ns.print_users = function() {
+    var __this = {};
+    __this.print_users = function() {
         var __data = _.parse_args(arguments, ['users'], [['show_names', false]]);
         var __output = '';
         __output += '\n<ul>\n';
@@ -54,7 +55,12 @@ After compiling with jinja2js you get the following:
         __output += '\n</ul>\n';
         return __output;
     };
+    __ns['example'] = __this;
     })(this.jinja2js = this.jinja2js || {}, jinja2support);
+
+With this javascript included in your html, you can use it as simply as:
+
+    jinja2js.example.print_users(user_list);
 
 Usage
 =====

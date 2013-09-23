@@ -1,3 +1,4 @@
+import os
 import re
 
 from cStringIO import StringIO
@@ -30,6 +31,10 @@ BOOL_NODES = (jinja2.nodes.And, jinja2.nodes.Or, jinja2.nodes.Not,
 BOOL_BIN_NODES = (jinja2.nodes.And, jinja2.nodes.Or, jinja2.nodes.Compare)
 
 
+def base_path(path):
+    return os.path.splitext(path)[0]
+
+
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
     def __init__(self, identifiers, environment, ctx):
@@ -38,6 +43,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
         # hard_scope argument manually here compensate. It is not used
         # within the JS compiler.
         self.identifiers = identifiers
+        self.identifiers.exported = set()
         self.hard_scope = False
 
         self.environment = environment
@@ -57,8 +63,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
             self.visit(else_)
 
     def visit_Macro(self, node):
-        self.identifiers.declared_locally.add(
-            ("%s" % (node.name)).encode("utf-8"))
+        self.identifiers.exported.add(("%s" % (node.name)).encode("utf-8"))
 
     def visit_Import(self, node):
         # register import target as declare_locally
@@ -261,19 +266,35 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writeline("(function(__ns, _) {\n")
+        self.writeline("(function(__ns, _) {\nvar __this = {};\n")
         self.blockvisit(node.body, frame)
+        self.writeline("__ns['%s'] = __this;" % base_path(self.filename))
         self.writeline("})(this.%s = this.%s || {}, jinja2support);" %
                        (self.namespace, self.namespace))
 
     def visit_Import(self, node, frame):
         self.mark(node)
+        val = base_path(node.template.value)
+        self.writeline("var %s = __ns['%s'];" % (node.target, val))
 
     def visit_Macro(self, node, frame):
         generator = MacroCodeGenerator(self.environment, self.stream,
                                        self.namespace, self.name,
                                        self.filename)
         generator.visit(node, frame)
+
+    def visit_Const(self, node, frame):
+        val = node.value
+        if val is None:
+            self.write("null")
+        elif val is True:
+            self.write("true")
+        elif val is False:
+            self.write("false")
+        else:
+            self.write(repr(val))
+
+        return False
 
     def visit_TemplateData(self, node, frame):
         self.mark(node)
@@ -463,6 +484,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # outer_undeclared
         # declared_locally
         # undeclared
+        # exported
         name = node.name
         isparam = False
 
@@ -484,8 +506,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
             isparam = True
 
-        elif name in topframe.identifiers.declared_locally:
-            output = "__ns." + name
+        elif name in topframe.identifiers.exported:
+            output = "__this." + name
         elif name in name in frame.identifiers.declared_locally:
             output = name
 
@@ -829,7 +851,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writeline("__ns.%s = function() {" % name)
+        self.writeline("__this.%s = function() {" % name)
         self.indent()
 
         default_start = len(node.args) - len(node.defaults)

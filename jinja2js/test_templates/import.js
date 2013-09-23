@@ -1,10 +1,13 @@
 (function(__ns, _) {
 var __this = {};
-__this.unicode_in_macro = function() {
+
+var macs = __ns['admin/macros'];
+
+__this.mac = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\u0442\u0435\u0441\u0442';
+    __output += '\n' + macs.other_mac() + '\n';
     return __output;
 };
-__ns['unicode'] = __this;
+__ns['import'] = __this;
 })(this.jinja2js = this.jinja2js || {}, jinja2support);
