@@ -4,6 +4,9 @@
     var indexOf = Array.prototype.indexOf;
 
     function object_matches_kwargspec(obj, kwargspec) {
+        if (kwargspec.length <= 0) {
+            return false;
+        }
         var keys = [];
         for (var i = 0, l = kwargspec.length; i < l; i++) {
             keys.push(kwargspec[i][0]);
@@ -207,6 +210,10 @@ jinja2filters.truncate = function() {
     }
 
     return args.s.substring(0, len) + args.end;
+};
+
+jinja2filters.trim = function(value) {
+    return value.replace(/^\s+/, '').replace(/\s+$/, '');
 };
 
 })(this.jinja2filters = this.jinja2filters || {}, jinja2support);
