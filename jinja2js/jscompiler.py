@@ -705,6 +705,12 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
     del binop, bool_binop, uaop
 
+    def visit_Concat(self, node, frame):
+        self.write("''")
+        for n in node.nodes:
+            self.write(' + ')
+            self.visit(n, frame)
+
     def visit_Compare(self, node, frame):
         op = node.ops[0]
         if len(node.ops) == 1 and op.op in LIST_OPERATORS:

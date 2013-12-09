@@ -1,0 +1,8 @@
+{% macro concat_str(val) %}
+{% set myvar = "prefix" ~ val %}
+{{myvar}}
+{% endmacro %}
+
+{% macro concat_consts() %}
+{% set myvar = "prefix" ~ "else" %}
+{% endmacro %}
