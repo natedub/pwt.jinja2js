@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.for_loop');
 
-__this.forinlist = function() {
+j2.for_loop.forinlist = function() {
     var __data = _.parse_args(arguments, ['jobs'], []);
     var __output = '';
     var jobList = __data.jobs;
@@ -12,5 +11,3 @@ __this.forinlist = function() {
     }
     return __output;
 };
-j2.for_loop = __this;
-})(jinja2support);

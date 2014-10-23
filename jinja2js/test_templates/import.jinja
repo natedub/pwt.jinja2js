@@ -1,6 +1,6 @@
 {% namespace j2.import %}
-{% import "admin/macros.jinja" as macs %}
+{% import "call_macro.jinja" as macs %}
 
 {% macro mac() %}
-{{ macs.other_mac() }}
+{{ macs.testcall() }}
 {% endmacro %}

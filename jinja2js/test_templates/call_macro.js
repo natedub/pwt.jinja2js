@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.call_macro');
 
-__this.testif = function() {
+j2.call_macro.testif = function() {
     var __data = _.parse_args(arguments, ['option'], []);
     var __output = '';
     if (_.truth(__data.option)) {
@@ -11,11 +10,9 @@ __this.testif = function() {
     return __output;
 };
 
-__this.testcall = function() {
+j2.call_macro.testcall = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + __this.testif() + '\n';
+    __output += '\n' + j2.call_macro.testif() + '\n';
     return __output;
 };
-j2.call_macro = __this;
-})(jinja2support);

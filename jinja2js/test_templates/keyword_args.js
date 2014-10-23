@@ -1,46 +1,43 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.keyword_args');
 
-__this.default_macro = function() {
+j2.keyword_args.default_macro = function() {
     var __data = _.parse_args(arguments, [], [['foo', 'bar']]);
     var __output = '';
     __output += '\n' + _.escape(__data.foo) + '\n';
     return __output;
 };
 
-__this.mixed_macro = function() {
+j2.keyword_args.mixed_macro = function() {
     var __data = _.parse_args(arguments, ['foo'], [['bar', 'baz']]);
     var __output = '';
     __output += '\n' + _.escape(__data.foo) + '\n';
     return __output;
 };
 
-__this.test_call_default_macro_with_arg = function() {
+j2.keyword_args.test_call_default_macro_with_arg = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + __this.default_macro('hello') + '\n';
+    __output += '\n' + j2.keyword_args.default_macro('hello') + '\n';
     return __output;
 };
 
-__this.test_call_default_macro_with_kwarg = function() {
+j2.keyword_args.test_call_default_macro_with_kwarg = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + __this.default_macro({'__jinja2_kwargs__': true, 'foo': 'hello'}) + '\n';
+    __output += '\n' + j2.keyword_args.default_macro({'__jinja2_kwargs__': true, 'foo': 'hello'}) + '\n';
     return __output;
 };
 
-__this.test_call_mixed_macro_with_arg = function() {
+j2.keyword_args.test_call_mixed_macro_with_arg = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + __this.mixed_macro('hello') + '\n';
+    __output += '\n' + j2.keyword_args.mixed_macro('hello') + '\n';
     return __output;
 };
 
-__this.test_call_mixed_macro_with_kwarg = function() {
+j2.keyword_args.test_call_mixed_macro_with_kwarg = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + __this.mixed_macro('hello', {'__jinja2_kwargs__': true, 'bar': 'goodbye'}) + '\n';
+    __output += '\n' + j2.keyword_args.mixed_macro('hello', {'__jinja2_kwargs__': true, 'bar': 'goodbye'}) + '\n';
     return __output;
 };
-j2.keyword_args = __this;
-})(jinja2support);

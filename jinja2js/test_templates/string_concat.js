@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.string_concat');
 
-__this.concat_str = function() {
+j2.string_concat.concat_str = function() {
     var __data = _.parse_args(arguments, ['val'], []);
     var __output = '';
     __output += '\n';
@@ -10,7 +9,7 @@ __this.concat_str = function() {
     return __output;
 };
 
-__this.concat_consts = function() {
+j2.string_concat.concat_consts = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
     __output += '\n';
@@ -18,5 +17,3 @@ __this.concat_consts = function() {
     __output += '\n';
     return __output;
 };
-j2.string_concat = __this;
-})(jinja2support);

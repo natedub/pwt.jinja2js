@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.in_operand');
 
-__this.test_in = function() {
+j2.in_operand.test_in = function() {
     var __data = _.parse_args(arguments, ['name'], []);
     var __output = '';
     if (_.in_(__data.name, ['bob', 'john'])) {
@@ -10,7 +9,7 @@ __this.test_in = function() {
     return __output;
 };
 
-__this.test_not_in = function() {
+j2.in_operand.test_not_in = function() {
     var __data = _.parse_args(arguments, ['name'], []);
     var __output = '';
     if (!_.in_(__data.name, ['bob', 'john'])) {
@@ -18,5 +17,3 @@ __this.test_not_in = function() {
     }
     return __output;
 };
-j2.in_operand = __this;
-})(jinja2support);

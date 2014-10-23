@@ -279,15 +279,13 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writeline("(function(_) {\nvar __this = {};\n")
+        self.writeline("goog.provide('%s');\n" % self.namespace)
         self.blockvisit(node.body, frame)
-        self.writeline("%s = __this;" % self.namespace)
-        self.writeline("})(jinja2support);")
 
     def visit_Import(self, node, frame):
         self.mark(node)
-        val = base_path(node.template.value)
-        self.writeline("var %s = __ns['%s'];" % (node.target, val))
+        namespace = namespace_from_import(self.environment, node)
+        self.writeline("goog.require('%s');\n" % namespace)
 
     def visit_Macro(self, node, frame):
         generator = MacroCodeGenerator(self.environment, self.stream,
@@ -519,7 +517,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             isparam = True
 
         elif name in topframe.identifiers.exported:
-            output = "__this." + name
+            output = '%s.%s' % (self.namespace, name)
         elif name in name in frame.identifiers.declared_locally:
             output = name
 
@@ -869,7 +867,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writeline("__this.%s = function() {" % name)
+        self.writeline("%s.%s = function() {" % (self.namespace, name))
         self.indent()
 
         default_start = len(node.args) - len(node.defaults)

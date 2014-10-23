@@ -1,14 +1,13 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.import');
 
 
-var macs = __ns['admin/macros'];
 
-__this.mac = function() {
+goog.require('j2.call_macro');
+
+
+j2.import.mac = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
-    __output += '\n' + macs.other_mac() + '\n';
+    __output += '\n' + macs.testcall() + '\n';
     return __output;
 };
-j2.import = __this;
-})(jinja2support);

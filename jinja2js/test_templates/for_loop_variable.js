@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.for_loop_variable');
 
-__this.for_loop_var_index = function() {
+j2.for_loop_variable.for_loop_var_index = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -13,7 +12,7 @@ __this.for_loop_var_index = function() {
     return __output;
 };
 
-__this.for_loop_var_index0 = function() {
+j2.for_loop_variable.for_loop_var_index0 = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -25,7 +24,7 @@ __this.for_loop_var_index0 = function() {
     return __output;
 };
 
-__this.for_loop_var_revindex = function() {
+j2.for_loop_variable.for_loop_var_revindex = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -37,7 +36,7 @@ __this.for_loop_var_revindex = function() {
     return __output;
 };
 
-__this.for_loop_var_revindex0 = function() {
+j2.for_loop_variable.for_loop_var_revindex0 = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -49,7 +48,7 @@ __this.for_loop_var_revindex0 = function() {
     return __output;
 };
 
-__this.for_loop_var_first = function() {
+j2.for_loop_variable.for_loop_var_first = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -61,7 +60,7 @@ __this.for_loop_var_first = function() {
     return __output;
 };
 
-__this.for_loop_var_last = function() {
+j2.for_loop_variable.for_loop_var_last = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -74,7 +73,7 @@ __this.for_loop_var_last = function() {
 };
 
 
-__this.for_loop_var_length = function() {
+j2.for_loop_variable.for_loop_var_length = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -86,7 +85,7 @@ __this.for_loop_var_length = function() {
     return __output;
 };
 
-__this.for_loop_var_cycle = function() {
+j2.for_loop_variable.for_loop_var_cycle = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
     var iList = __data.items;
@@ -98,7 +97,7 @@ __this.for_loop_var_cycle = function() {
     return __output;
 };
 
-__this.for_loop_var_cycle_vars = function() {
+j2.for_loop_variable.for_loop_var_cycle_vars = function() {
     var __data = _.parse_args(arguments, ['items', 'var1', 'var2'], []);
     var __output = '';
     var iList = __data.items;
@@ -109,5 +108,3 @@ __this.for_loop_var_cycle_vars = function() {
     }
     return __output;
 };
-j2.for_loop_variable = __this;
-})(jinja2support);

@@ -1,7 +1,6 @@
-(function(_) {
-var __this = {};
+goog.provide('j2.assignment');
 
-__this.test_assignment = function() {
+j2.assignment.test_assignment = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
     __output += '\n';
@@ -11,5 +10,3 @@ __this.test_assignment = function() {
     __output += '\n' + _.escape(value) + '\n';
     return __output;
 };
-j2.assignment = __this;
-})(jinja2support);
