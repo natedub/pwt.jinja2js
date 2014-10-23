@@ -8,6 +8,7 @@ j2.object_definition.object_definition = function(__data) {
 
 j2.object_definition.object_definition_with_varible_value = function(__data) {
     var val = __data.val;
+    goog.asserts.assert(goog.isDef(val), "Required parameter not provided: val");
     var __output = '';
     var a = {'a': val, 'b': 'c'};
     return __output;

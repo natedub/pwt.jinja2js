@@ -2,6 +2,7 @@ goog.provide('j2.for_loop_variable');
 
 j2.for_loop_variable.for_loop_var_index = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -14,6 +15,7 @@ j2.for_loop_variable.for_loop_var_index = function(__data) {
 
 j2.for_loop_variable.for_loop_var_index0 = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -26,6 +28,7 @@ j2.for_loop_variable.for_loop_var_index0 = function(__data) {
 
 j2.for_loop_variable.for_loop_var_revindex = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -38,6 +41,7 @@ j2.for_loop_variable.for_loop_var_revindex = function(__data) {
 
 j2.for_loop_variable.for_loop_var_revindex0 = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -50,6 +54,7 @@ j2.for_loop_variable.for_loop_var_revindex0 = function(__data) {
 
 j2.for_loop_variable.for_loop_var_first = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -62,6 +67,7 @@ j2.for_loop_variable.for_loop_var_first = function(__data) {
 
 j2.for_loop_variable.for_loop_var_last = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -75,6 +81,7 @@ j2.for_loop_variable.for_loop_var_last = function(__data) {
 
 j2.for_loop_variable.for_loop_var_length = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -87,6 +94,7 @@ j2.for_loop_variable.for_loop_var_length = function(__data) {
 
 j2.for_loop_variable.for_loop_var_cycle = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;
@@ -99,8 +107,11 @@ j2.for_loop_variable.for_loop_var_cycle = function(__data) {
 
 j2.for_loop_variable.for_loop_var_cycle_vars = function(__data) {
     var items = __data.items;
+    goog.asserts.assert(goog.isDef(items), "Required parameter not provided: items");
     var var1 = __data.var1;
+    goog.asserts.assert(goog.isDef(var1), "Required parameter not provided: var1");
     var var2 = __data.var2;
+    goog.asserts.assert(goog.isDef(var2), "Required parameter not provided: var2");
     var __output = '';
     var iList = items;
     var iListLen = iList.length;

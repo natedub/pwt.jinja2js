@@ -12,6 +12,7 @@ j2.assignment.test_assignment = function(__data) {
 
 j2.assignment.test_assignment_param = function(__data) {
     var param = __data.param;
+    goog.asserts.assert(goog.isDef(param), "Required parameter not provided: param");
     var __output = '';
     __output += '\n';
     param = (param + '?');

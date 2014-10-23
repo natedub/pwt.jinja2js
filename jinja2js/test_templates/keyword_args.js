@@ -9,6 +9,7 @@ j2.keyword_args.default_macro = function(__data) {
 
 j2.keyword_args.mixed_macro = function(__data) {
     var foo = __data.foo;
+    goog.asserts.assert(goog.isDef(foo), "Required parameter not provided: foo");
     var bar = goog.isDef(__data.bar) ? __data.bar : 'baz';
     var __output = '';
     __output += '\n' + _.escape(foo) + '\n';

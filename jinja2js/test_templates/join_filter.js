@@ -20,6 +20,7 @@ j2.join_filter.join_filter_kwarg = function(__data) {
 
 j2.join_filter.join_filter_var_arg = function(__data) {
     var separator = __data.separator;
+    goog.asserts.assert(goog.isDef(separator), "Required parameter not provided: separator");
     var __output = '';
     __output += _.escape(jinja2filters.join(['a', 'b', 'c'], separator));
     return __output;
@@ -27,7 +28,9 @@ j2.join_filter.join_filter_var_arg = function(__data) {
 
 j2.join_filter.join_filter_array_arg = function(__data) {
     var separators = __data.separators;
+    goog.asserts.assert(goog.isDef(separators), "Required parameter not provided: separators");
     var index = __data.index;
+    goog.asserts.assert(goog.isDef(index), "Required parameter not provided: index");
     var __output = '';
     __output += _.escape(jinja2filters.join(['a', 'b', 'c'], separators[index]));
     return __output;
@@ -35,7 +38,9 @@ j2.join_filter.join_filter_array_arg = function(__data) {
 
 j2.join_filter.join_filter_complex_arg = function(__data) {
     var config = __data.config;
+    goog.asserts.assert(goog.isDef(config), "Required parameter not provided: config");
     var type = __data.type;
+    goog.asserts.assert(goog.isDef(type), "Required parameter not provided: type");
     var __output = '';
     __output += _.escape(jinja2filters.join(['a', 'b', 'c'], config.separator[type].value));
     return __output;

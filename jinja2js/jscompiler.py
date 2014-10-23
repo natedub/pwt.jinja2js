@@ -54,6 +54,9 @@ class JSIdentifiers(jinja2.compiler.Identifiers):
         # Local names to absolute namespaced names.
         self.exports = {}
 
+    def __repr__(self):
+        return 'JSIdentifiers(%r)' % self.__dict__
+
 def dot_join(*args):
     return '.'.join(map(str, args))
 
@@ -918,9 +921,14 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         num_defaults = len(node.defaults)
         num_required = len(node.args) - num_defaults
+
+        # Assign local variables for each required parameter.
         for arg in node.args[:num_required]:
             frame.assigned_names.add(arg.name)
             self.writeline('var %s = __data.%s;' % (arg.name, arg.name))
+            self.writeline('goog.asserts.assert(goog.isDef(%s), "Required parameter not provided: %s");' % (arg.name, arg.name))
+
+        # Assign local variables for each optional parameter, specifying its default.
         for arg, default in zip(node.args[num_required:], node.defaults):
             frame.assigned_names.add(arg.name)
             self.writeline('var %s = goog.isDef(__data.%s) ? __data.%s : ' % (arg.name, arg.name, arg.name))

@@ -2,7 +2,9 @@ goog.provide('j2.object_access_with_named_var');
 
 j2.object_access_with_named_var.test_named_access = function(__data) {
     var types = __data.types;
+    goog.asserts.assert(goog.isDef(types), "Required parameter not provided: types");
     var allowed_types = __data.allowed_types;
+    goog.asserts.assert(goog.isDef(allowed_types), "Required parameter not provided: allowed_types");
     var __output = '';
     __output += '\n';
     var tList = allowed_types;
@@ -17,7 +19,9 @@ j2.object_access_with_named_var.test_named_access = function(__data) {
 
 j2.object_access_with_named_var.test_named_access_sub_value = function(__data) {
     var types = __data.types;
+    goog.asserts.assert(goog.isDef(types), "Required parameter not provided: types");
     var allowed_types = __data.allowed_types;
+    goog.asserts.assert(goog.isDef(allowed_types), "Required parameter not provided: allowed_types");
     var __output = '';
     __output += '\n';
     var tList = allowed_types;
@@ -32,6 +36,7 @@ j2.object_access_with_named_var.test_named_access_sub_value = function(__data) {
 
 j2.object_access_with_named_var.test_named_access_assigned_value = function(__data) {
     var allowed_types = __data.allowed_types;
+    goog.asserts.assert(goog.isDef(allowed_types), "Required parameter not provided: allowed_types");
     var __output = '';
     __output += '\n';
     var types = {'h1': 'H1'};
