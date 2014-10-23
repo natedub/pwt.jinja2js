@@ -279,11 +279,10 @@ class CodeGenerator(BaseCodeGenerator):
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
-        self.writeline("(function(__ns, _) {\nvar __this = {};\n")
+        self.writeline("(function(_) {\nvar __this = {};\n")
         self.blockvisit(node.body, frame)
-        self.writeline("__ns['%s'] = __this;" % base_path(self.filename))
-        self.writeline("})(this.%s = this.%s || {}, jinja2support);" %
-                       (self.namespace, self.namespace))
+        self.writeline("%s = __this;" % self.namespace)
+        self.writeline("})(jinja2support);")
 
     def visit_Import(self, node, frame):
         self.mark(node)
