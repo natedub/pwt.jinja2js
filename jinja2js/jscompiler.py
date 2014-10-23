@@ -46,6 +46,11 @@ class JSIdentifiers(jinja2.compiler.Identifiers):
         # Local names to absolute namespaced names.
         self.imports = {}
 
+        # Template paths to namespaces. Tracked separately from absolute
+        # namespaced names to make it easy to print the necessary goog.require
+        # calls in the CodeGenerator.
+        self.import_namespaces = {}
+
         # Local names to absolute namespaced names.
         self.exports = {}
 
@@ -81,8 +86,10 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
     def visit_Import(self, node):
         self.generic_visit(node)
 
-        namespace = namespace_from_import(self.environment, node)
+        path = node.template.value
+        namespace = namespace_from_import(self.environment, path)
         self.identifiers.imports[node.target] = namespace
+        self.identifiers.import_namespaces[path] = namespace
 
         self.identifiers.declared_locally.add(node.target)
 
@@ -91,7 +98,9 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
     def visit_FromImport(self, node):
         self.generic_visit(node)
 
-        namespace = namespace_from_import(self.environment, node)
+        path = node.template.value
+        namespace = namespace_from_import(self.environment, path)
+        self.identifiers.import_namespaces[path] = namespace
 
         for item in node.names:
             name = item[1] if isinstance(item, tuple) else item
@@ -273,8 +282,7 @@ def namespace_from_tmpl(node, name=None, filename=None):
             0, name, filename)
     return ns_nodes[0].namespace if ns_nodes else 'jinja2js'
 
-def namespace_from_import(env, node):
-    name = node.template.value
+def namespace_from_import(env, name):
     source, filename, uptodate = env.loader.get_source(env, name)
     imported_node = env._parse(source, name, filename)
     return namespace_from_tmpl(imported_node, name, filename)
@@ -316,8 +324,12 @@ class CodeGenerator(BaseCodeGenerator):
 
     def visit_Import(self, node, frame):
         self.mark(node)
-        namespace = namespace_from_import(self.environment, node)
+        path = node.template.value
+        namespace = frame.identifiers.import_namespaces[path]
         self.writeline("goog.require('%s');\n" % namespace)
+
+    def visit_FromImport(self, node, frame):
+        self.visit_Import(node, frame)
 
     def visit_Macro(self, node, frame):
         generator = MacroCodeGenerator(self.environment, self.stream,

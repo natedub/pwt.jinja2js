@@ -1,0 +1,6 @@
+{% namespace j2.import %}
+{% from "call_macro.jinja" import testcall %}
+
+{% macro mac() %}
+{{ testcall() }}
+{% endmacro %}
