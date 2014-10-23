@@ -12,6 +12,7 @@ import jscompiler
 
 
 env = Environment(loader=PackageLoader('jinja2js', 'test_templates'),
+                  extensions=['jinja2js.ext.Namespace'],
                   autoescape=True)
 
 
@@ -52,4 +53,4 @@ def test_undeclared_var():
     # variable is undeclared
     src = """{% macro hello() %}{{ name }}{% endmacro %}"""
     node = env._parse(src, None, None)
-    jscompiler._generate(node, env, "var1.html", "var1.html", 'jinja2js')
+    jscompiler._generate(node, env, "var1.html", "var1.html")

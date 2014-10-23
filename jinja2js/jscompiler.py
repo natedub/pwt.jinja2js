@@ -9,6 +9,8 @@ from jinja2.compiler import TemplateAssertionError
 from jinja2.visitor import NodeVisitor
 from jinja2.utils import escape
 
+from jinja2js import nodes
+
 
 UNARYOP = {
     "not ": "!"
@@ -237,11 +239,21 @@ class BaseCodeGenerator(NodeVisitor):
             self.visit(node, frame)
 
 
+def namespace_from_tmpl(node, name, filename):
+    ns_nodes = list(node.find_all(nodes.NamespaceNode))
+    # TODO: Require exactly one namespace
+    if len(ns_nodes) > 1:
+        raise jinja2.compiler.TemplateAssertionError(
+            'You must provide exactly one {% namespace %} node',
+            0, name, filename)
+    return ns_nodes[0].namespace if ns_nodes else 'jinja2js'
+
+
 class CodeGenerator(BaseCodeGenerator):
 
-    def __init__(self, environment, name, filename, namespace="jinja2js"):
+    def __init__(self, environment, name, filename):
         super(CodeGenerator, self).__init__(environment, name, filename)
-        self.namespace = namespace
+        self.namespace = None
 
     def visit_Template(self, node):
         """
@@ -249,6 +261,7 @@ class CodeGenerator(BaseCodeGenerator):
 
         Includes imports, macro definitions, etc.
         """
+        self.namespace = namespace_from_tmpl(node, self.name, self.filename)
 
         have_extends = node.find(jinja2.nodes.Extends) is not None
         if have_extends:
@@ -1004,21 +1017,21 @@ def strip_html_whitespace(value):
     return _excess_whitespace.sub(' ', value)
 
 
-def generate(environment, name, filename, namespace="jinja2js"):
+def generate(environment, name, filename):
     """Generate the javascript source for jinja template."""
     src, path, uptodate = environment.loader.get_source(environment, filename)
     node = environment.parse(src)
 
-    return _generate(node, environment, name, filename, namespace)
+    return _generate(node, environment, name, filename)
 
 
-def generate_from_string(environment, src, namespace="jinja2js"):
+def generate_from_string(environment, src):
     node = environment.parse(src)
 
-    return _generate(node, environment, "", "", namespace)
+    return _generate(node, environment, "", "")
 
 
-def _generate(node, environment, name, filename, namespace):
-    generator = CodeGenerator(environment, name, filename, namespace)
+def _generate(node, environment, name, filename):
+    generator = CodeGenerator(environment, name, filename)
     generator.visit(node)
     return generator.stream.getvalue()
