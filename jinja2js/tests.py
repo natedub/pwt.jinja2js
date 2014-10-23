@@ -29,9 +29,16 @@ def compare(result, expected):
 
 def load_and_compare(source_file, expected_file):
     src = jscompiler.generate(env, expected_file, source_file)
-    with open(expected_file) as f:
+    with open(expected_file, 'w+') as f:
         expected = f.read()
-        compare(src, expected)
+        try:
+            compare(src, expected)
+        except AssertionError:
+            if os.environ.get('UPDATE_JS'):
+                f.seek(0)
+                f.write(src)
+                f.truncate()
+            raise
 
 
 def test_file_templates():
