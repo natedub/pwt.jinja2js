@@ -26,15 +26,16 @@ def compare(result, expected):
             print change
         assert False, "Result and expected do not match"
 
+UPDATE_JS = bool(os.environ.get('UPDATE_JS'))
 
 def load_and_compare(source_file, expected_file):
     src = jscompiler.generate(env, expected_file, source_file)
-    with open(expected_file, 'w+') as f:
+    with open(expected_file, 'w+' if UPDATE_JS else 'r') as f:
         expected = f.read()
         try:
             compare(src, expected)
         except AssertionError:
-            if os.environ.get('UPDATE_JS'):
+            if UPDATE_JS:
                 f.seek(0)
                 f.write(src)
                 f.truncate()
