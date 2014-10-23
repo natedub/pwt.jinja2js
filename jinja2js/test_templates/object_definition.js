@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.object_definition = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
@@ -34,5 +35,5 @@ __this.object_definition_with_numbers_in_key = function() {
     var a = {1: 'b', 3: 'c'};
     return __output;
 };
-__ns['object_definition'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.object_definition = __this;
+})(jinja2support);

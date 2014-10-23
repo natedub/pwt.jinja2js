@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.for_loop_var_index = function() {
     var __data = _.parse_args(arguments, ['items'], []);
     var __output = '';
@@ -108,5 +109,5 @@ __this.for_loop_var_cycle_vars = function() {
     }
     return __output;
 };
-__ns['for_loop_variable'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.for_loop_variable = __this;
+})(jinja2support);

@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.concat_str = function() {
     var __data = _.parse_args(arguments, ['val'], []);
     var __output = '';
@@ -17,5 +18,5 @@ __this.concat_consts = function() {
     __output += '\n';
     return __output;
 };
-__ns['string_concat'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.string_concat = __this;
+})(jinja2support);

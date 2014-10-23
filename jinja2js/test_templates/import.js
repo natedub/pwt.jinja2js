@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 
 var macs = __ns['admin/macros'];
 
@@ -9,5 +10,5 @@ __this.mac = function() {
     __output += '\n' + macs.other_mac() + '\n';
     return __output;
 };
-__ns['import'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.import = __this;
+})(jinja2support);

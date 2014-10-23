@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.round_num = function() {
     var __data = _.parse_args(arguments, ['num'], []);
     var __output = '';
@@ -20,6 +21,6 @@ __this.round_num_kwargs = function() {
     __output += '\n' + _.escape(jinja2filters.round(__data.num, {'__jinja2_kwargs__': true, 'precision': 2, 'method': 'floor'})) + '\n';
     return __output;
 };
-__ns['round_filter'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.round_filter = __this;
+})(jinja2support);
 

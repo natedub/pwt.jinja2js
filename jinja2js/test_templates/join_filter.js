@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.join_filter_default = function() {
     var __data = _.parse_args(arguments, [], []);
     var __output = '';
@@ -41,5 +42,5 @@ __this.join_filter_complex_arg = function() {
     __output += _.escape(jinja2filters.join(['a', 'b', 'c'], __data.config.separator[__data.type].value));
     return __output;
 };
-__ns['join_filter'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.join_filter = __this;
+})(jinja2support);

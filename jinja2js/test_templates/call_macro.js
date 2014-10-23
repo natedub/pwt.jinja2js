@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.testif = function() {
     var __data = _.parse_args(arguments, ['option'], []);
     var __output = '';
@@ -16,5 +17,5 @@ __this.testcall = function() {
     __output += '\n' + __this.testif() + '\n';
     return __output;
 };
-__ns['call_macro'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.call_macro = __this;
+})(jinja2support);

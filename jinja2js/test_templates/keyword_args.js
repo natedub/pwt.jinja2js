@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.default_macro = function() {
     var __data = _.parse_args(arguments, [], [['foo', 'bar']]);
     var __output = '';
@@ -41,5 +42,5 @@ __this.test_call_mixed_macro_with_kwarg = function() {
     __output += '\n' + __this.mixed_macro('hello', {'__jinja2_kwargs__': true, 'bar': 'goodbye'}) + '\n';
     return __output;
 };
-__ns['keyword_args'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.keyword_args = __this;
+})(jinja2support);

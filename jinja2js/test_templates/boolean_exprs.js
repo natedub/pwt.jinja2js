@@ -1,5 +1,6 @@
-(function(__ns, _) {
+(function(_) {
 var __this = {};
+
 __this.test_and = function() {
     var __data = _.parse_args(arguments, ['a', 'b'], []);
     var __output = '';
@@ -35,5 +36,5 @@ __this.test_alt_xor = function() {
     }
     return __output;
 };
-__ns['boolean_exprs'] = __this;
-})(this.jinja2js = this.jinja2js || {}, jinja2support);
+j2.boolean_exprs = __this;
+})(jinja2support);
