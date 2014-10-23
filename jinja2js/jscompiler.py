@@ -36,18 +36,26 @@ BOOL_BIN_NODES = (jinja2.nodes.And, jinja2.nodes.Or, jinja2.nodes.Compare)
 def base_path(path):
     return os.path.splitext(path)[0]
 
+class JSIdentifiers(jinja2.compiler.Identifiers):
+    def __init__(self):
+        super(JSIdentifiers, self).__init__()
+
+        # The namespace of the current template.
+        self.namespace = None
+
+        # Local names to absolute namespaced names.
+        self.imports = {}
+
+        # Local names to absolute namespaced names.
+        self.exports = {}
+
+def dot_join(*args):
+    return '.'.join(map(str, args))
 
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
     def __init__(self, identifiers, environment, ctx):
-        # Manually setup the identifiers as older version of Jinja2 required
-        # a hard_scope argument. So to work with older version just set the
-        # hard_scope argument manually here compensate. It is not used
-        # within the JS compiler.
         self.identifiers = identifiers
-        self.identifiers.exported = set()
-        self.hard_scope = False
-
         self.environment = environment
         self.ctx = ctx
 
@@ -65,13 +73,32 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
             self.visit(else_)
 
     def visit_Macro(self, node):
-        self.identifiers.exported.add(("%s" % (node.name)).encode("utf-8"))
+        self.identifiers.exports[node.name] = dot_join(
+            self.identifiers.namespace,
+            node.name,
+        )
 
     def visit_Import(self, node):
-        # register import target as declare_locally
-        super(JSFrameIdentifierVisitor, self).visit_Import(node)
+        self.generic_visit(node)
 
-    # def visit_FromImport(self, node):
+        namespace = namespace_from_import(self.environment, node)
+        self.identifiers.imports[node.target] = namespace
+
+        self.identifiers.declared_locally.add(node.target)
+
+        # Need to find all the macros defined in this namespace
+
+    def visit_FromImport(self, node):
+        self.generic_visit(node)
+
+        namespace = namespace_from_import(self.environment, node)
+
+        for item in node.names:
+            name = item[1] if isinstance(item, tuple) else item
+            self.identifiers.imports[name] = dot_join(namespace, name)
+
+            self.identifiers.declared_locally.add(name)
+
 
     # def visit_Assign
 
@@ -96,9 +123,7 @@ class JSFrame(jinja2.compiler.Frame):
     def __init__(self, environment, eval_ctx, parent=None):
         super(JSFrame, self).__init__(eval_ctx, parent)
 
-        # map local variables to imported code
-        self.identifiers.imports = {}
-
+        self.identifiers = JSIdentifiers()
         self.environment = environment
 
         # mapping of visit_Name callback to reassign variable names for use
@@ -239,7 +264,7 @@ class BaseCodeGenerator(NodeVisitor):
             self.visit(node, frame)
 
 
-def namespace_from_tmpl(node, name, filename):
+def namespace_from_tmpl(node, name=None, filename=None):
     ns_nodes = list(node.find_all(nodes.NamespaceNode))
     # TODO: Require exactly one namespace
     if len(ns_nodes) > 1:
@@ -247,6 +272,12 @@ def namespace_from_tmpl(node, name, filename):
             'You must provide exactly one {% namespace %} node',
             0, name, filename)
     return ns_nodes[0].namespace if ns_nodes else 'jinja2js'
+
+def namespace_from_import(env, node):
+    name = node.template.value
+    source, filename, uptodate = env.loader.get_source(env, name)
+    imported_node = env._parse(source, name, filename)
+    return namespace_from_tmpl(imported_node, name, filename)
 
 
 class CodeGenerator(BaseCodeGenerator):
@@ -276,6 +307,7 @@ class CodeGenerator(BaseCodeGenerator):
 
         # process the root
         frame = JSFrame(self.environment, eval_ctx)
+        frame.identifiers.namespace = self.namespace
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
 
@@ -516,8 +548,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
             isparam = True
 
-        elif name in topframe.identifiers.exported:
-            output = '%s.%s' % (self.namespace, name)
+        elif name in topframe.identifiers.exports:
+            output = topframe.identifiers.exports[name]
+        elif name in topframe.identifiers.imports:
+            output = topframe.identifiers.imports[name]
         elif name in name in frame.identifiers.declared_locally:
             output = name
 
