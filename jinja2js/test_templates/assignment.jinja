@@ -5,3 +5,8 @@
 {% set value = 2 %}
 {{ value }}
 {% endmacro %}
+
+{% macro test_assignment_param(param) %}
+{% set param = param + '?' %}
+{{ param }}
+{% endmacro %}

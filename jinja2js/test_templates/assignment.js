@@ -9,3 +9,12 @@ j2.assignment.test_assignment = function(__data) {
     __output += '\n' + _.escape(value) + '\n';
     return __output;
 };
+
+j2.assignment.test_assignment_param = function(__data) {
+    var param = __data.param;
+    var __output = '';
+    __output += '\n';
+    param = (param + '?');
+    __output += '\n' + _.escape(param) + '\n';
+    return __output;
+};

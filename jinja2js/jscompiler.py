@@ -919,8 +919,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
         num_defaults = len(node.defaults)
         num_required = len(node.args) - num_defaults
         for arg in node.args[:num_required]:
+            frame.assigned_names.add(arg.name)
             self.writeline('var %s = __data.%s;' % (arg.name, arg.name))
         for arg, default in zip(node.args[num_required:], node.defaults):
+            frame.assigned_names.add(arg.name)
             self.writeline('var %s = goog.isDef(__data.%s) ? __data.%s : ' % (arg.name, arg.name, arg.name))
             self.visit(default, frame)
             self.write(';')
