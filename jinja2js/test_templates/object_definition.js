@@ -7,8 +7,9 @@ j2.object_definition.object_definition = function(__data) {
 };
 
 j2.object_definition.object_definition_with_varible_value = function(__data) {
+    var val = __data.val;
     var __output = '';
-    var a = {'a': __data.val, 'b': 'c'};
+    var a = {'a': val, 'b': 'c'};
     return __output;
 };
 

@@ -1,9 +1,10 @@
 goog.provide('j2.string_concat');
 
 j2.string_concat.concat_str = function(__data) {
+    var val = __data.val;
     var __output = '';
     __output += '\n';
-    var myvar = '' + 'prefix' + __data.val;
+    var myvar = '' + 'prefix' + val;
     __output += '\n' + _.escape(myvar) + '\n';
     return __output;
 };

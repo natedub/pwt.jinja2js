@@ -1,14 +1,17 @@
 goog.provide('j2.keyword_args');
 
 j2.keyword_args.default_macro = function(__data) {
+    var foo = goog.isDef(__data.foo) ? __data.foo : 'bar';
     var __output = '';
-    __output += '\n' + _.escape(__data.foo) + '\n';
+    __output += '\n' + _.escape(foo) + '\n';
     return __output;
 };
 
 j2.keyword_args.mixed_macro = function(__data) {
+    var foo = __data.foo;
+    var bar = goog.isDef(__data.bar) ? __data.bar : 'baz';
     var __output = '';
-    __output += '\n' + _.escape(__data.foo) + '\n';
+    __output += '\n' + _.escape(foo) + '\n';
     return __output;
 };
 

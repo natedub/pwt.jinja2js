@@ -1,8 +1,9 @@
 goog.provide('j2.for_loop_variable');
 
 j2.for_loop_variable.for_loop_var_index = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -12,8 +13,9 @@ j2.for_loop_variable.for_loop_var_index = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_index0 = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -23,8 +25,9 @@ j2.for_loop_variable.for_loop_var_index0 = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_revindex = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -34,8 +37,9 @@ j2.for_loop_variable.for_loop_var_revindex = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_revindex0 = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -45,8 +49,9 @@ j2.for_loop_variable.for_loop_var_revindex0 = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_first = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -56,8 +61,9 @@ j2.for_loop_variable.for_loop_var_first = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_last = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -68,8 +74,9 @@ j2.for_loop_variable.for_loop_var_last = function(__data) {
 
 
 j2.for_loop_variable.for_loop_var_length = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -79,8 +86,9 @@ j2.for_loop_variable.for_loop_var_length = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_cycle = function(__data) {
+    var items = __data.items;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
@@ -90,12 +98,15 @@ j2.for_loop_variable.for_loop_var_cycle = function(__data) {
 };
 
 j2.for_loop_variable.for_loop_var_cycle_vars = function(__data) {
+    var items = __data.items;
+    var var1 = __data.var1;
+    var var2 = __data.var2;
     var __output = '';
-    var iList = __data.items;
+    var iList = items;
     var iListLen = iList.length;
     for (var iIndex = 0; iIndex < iListLen; iIndex++) {
         var iData = iList[iIndex];
-        __output += _.arg_getter(iIndex)(__data.var1, __data.var2);
+        __output += _.arg_getter(iIndex)(var1, var2);
     }
     return __output;
 };

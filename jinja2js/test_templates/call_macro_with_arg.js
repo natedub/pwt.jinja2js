@@ -1,9 +1,10 @@
 goog.provide('j2.call_macro_with_arg');
 
 j2.call_macro_with_arg.testif = function(__data) {
+    var option = __data.option;
     var __output = '';
-    if (_.truth(__data.option)) {
-        __output += '\n' + _.escape(__data.option) + '\n';
+    if (_.truth(option)) {
+        __output += '\n' + _.escape(option) + '\n';
     }
     __output += '\n';
     return __output;

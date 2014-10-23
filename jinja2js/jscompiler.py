@@ -550,10 +550,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
         parent_ids = frame.parent.identifiers if frame.parent else None
 
         if name in ids.declared_parameter or name in ids.outer_undeclared:
-            output = "__data." + name
+            output = name
             isparam = True
         elif parent_ids and name in parent_ids.declared_parameter:
-            output = '__data.' + name
+            output = name
 
         elif name in frame.reassigned_names:
             output = frame.reassigned_names[name]
@@ -913,28 +913,17 @@ class MacroCodeGenerator(BaseCodeGenerator):
     def macro_body(self, name, node, frame, children=None):
         frame = self.function_scoping(node, frame, children=children)
 
-        self.writeline("%s.%s = function() {" % (self.namespace, name))
+        self.writeline("%s.%s = function(__data) {" % (self.namespace, name))
         self.indent()
 
-        default_start = len(node.args) - len(node.defaults)
-        args = node.args[:default_start]
-        default_args = node.args[default_start:]
-
-        self.writeline("var __data = _.parse_args(arguments, [")
-        js_args = ["'%s'" % arg.name for arg in args]
-        self.write(", ".join(js_args))
-        self.write("], [")
-
-        start_loop = True
-        for arg, value in zip(default_args, node.defaults):
-            if not start_loop:
-                self.write(', ')
-            self.write("['%s', " % arg.name)
-            self.visit(value, frame)
-            self.write("]")
-            start_loop = False
-
-        self.write("]);")
+        num_defaults = len(node.defaults)
+        num_required = len(node.args) - num_defaults
+        for arg in node.args[:num_required]:
+            self.writeline('var %s = __data.%s;' % (arg.name, arg.name))
+        for arg, default in zip(node.args[num_required:], node.defaults):
+            self.writeline('var %s = goog.isDef(__data.%s) ? __data.%s : ' % (arg.name, arg.name, arg.name))
+            self.visit(default, frame)
+            self.write(';')
 
         self.writeline_startoutput(node, frame)
         self.blockvisit(node.body, frame)
