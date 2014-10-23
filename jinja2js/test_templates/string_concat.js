@@ -1,7 +1,6 @@
 goog.provide('j2.string_concat');
 
-j2.string_concat.concat_str = function() {
-    var __data = _.parse_args(arguments, ['val'], []);
+j2.string_concat.concat_str = function(__data) {
     var __output = '';
     __output += '\n';
     var myvar = '' + 'prefix' + __data.val;
@@ -9,8 +8,7 @@ j2.string_concat.concat_str = function() {
     return __output;
 };
 
-j2.string_concat.concat_consts = function() {
-    var __data = _.parse_args(arguments, [], []);
+j2.string_concat.concat_consts = function(__data) {
     var __output = '';
     __output += '\n';
     var myvar = '' + 'prefix' + 'else';

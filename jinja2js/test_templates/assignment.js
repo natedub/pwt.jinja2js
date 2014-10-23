@@ -1,7 +1,6 @@
 goog.provide('j2.assignment');
 
-j2.assignment.test_assignment = function() {
-    var __data = _.parse_args(arguments, [], []);
+j2.assignment.test_assignment = function(__data) {
     var __output = '';
     __output += '\n';
     var value = 1;

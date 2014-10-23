@@ -1,7 +1,6 @@
 goog.provide('j2.object_access_with_named_var');
 
-j2.object_access_with_named_var.test_named_access = function() {
-    var __data = _.parse_args(arguments, ['types', 'allowed_types'], []);
+j2.object_access_with_named_var.test_named_access = function(__data) {
     var __output = '';
     __output += '\n';
     var tList = __data.allowed_types;
@@ -14,8 +13,7 @@ j2.object_access_with_named_var.test_named_access = function() {
     return __output;
 };
 
-j2.object_access_with_named_var.test_named_access_sub_value = function() {
-    var __data = _.parse_args(arguments, ['types', 'allowed_types'], []);
+j2.object_access_with_named_var.test_named_access_sub_value = function(__data) {
     var __output = '';
     __output += '\n';
     var tList = __data.allowed_types;
@@ -28,8 +26,7 @@ j2.object_access_with_named_var.test_named_access_sub_value = function() {
     return __output;
 };
 
-j2.object_access_with_named_var.test_named_access_assigned_value = function() {
-    var __data = _.parse_args(arguments, ['allowed_types'], []);
+j2.object_access_with_named_var.test_named_access_assigned_value = function(__data) {
     var __output = '';
     __output += '\n';
     var types = {'h1': 'H1'};

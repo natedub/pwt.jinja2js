@@ -1,16 +1,14 @@
 goog.provide('j2.call_block');
 
-j2.call_block.render_dialog = function() {
-    var __data = _.parse_args(arguments, ['type'], []);
+j2.call_block.render_dialog = function(__data) {
     var __output = '';
     __output += '<div class="type">' + __data.__caller() + '</div>';
     return __output;
 };
 
-j2.call_block.render = function() {
-    var __data = _.parse_args(arguments, ['name'], []);
+j2.call_block.render = function(__data) {
     var __output = '';
-    func_caller = function() {
+    func_caller = function(__data) {
         var __output = '';
         __output += 'Hello ' + _.escape(__data.name) + '!';
         return __output;

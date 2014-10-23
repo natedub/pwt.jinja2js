@@ -1,7 +1,6 @@
 goog.provide('j2.for_loop');
 
-j2.for_loop.forinlist = function() {
-    var __data = _.parse_args(arguments, ['jobs'], []);
+j2.for_loop.forinlist = function(__data) {
     var __output = '';
     var jobList = __data.jobs;
     var jobListLen = jobList.length;

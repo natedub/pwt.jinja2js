@@ -1,7 +1,6 @@
 goog.provide('j2.call_macro');
 
-j2.call_macro.testif = function() {
-    var __data = _.parse_args(arguments, ['option'], []);
+j2.call_macro.testif = function(__data) {
     var __output = '';
     if (_.truth(__data.option)) {
         __output += '\n' + _.escape(__data.option) + '\n';
@@ -10,8 +9,7 @@ j2.call_macro.testif = function() {
     return __output;
 };
 
-j2.call_macro.testcall = function() {
-    var __data = _.parse_args(arguments, [], []);
+j2.call_macro.testcall = function(__data) {
     var __output = '';
     __output += '\n' + j2.call_macro.testif() + '\n';
     return __output;
