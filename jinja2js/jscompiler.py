@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 
@@ -54,11 +55,48 @@ class JSIdentifiers(jinja2.compiler.Identifiers):
         # Local names to absolute namespaced names.
         self.exports = {}
 
+        self.imported_identifiers = {}
+        self.exported_macros = {}
+        self.macros = {}
+
     def __repr__(self):
         return 'JSIdentifiers(%r)' % self.__dict__
 
 def dot_join(*args):
     return '.'.join(map(str, args))
+
+class Macro(object):
+    def __init__(self, namespace, name, args, defaults, dyn_args=False, dyn_kwargs=False):
+        # The namespace where the function is defined
+        self.namespace = namespace
+        # The name of the function within the namespace
+        self.name = name
+        # The full namespaced name
+        self.fullname = dot_join(namespace, name)
+        # The names of all parameters declared in the signature
+        self.args = args
+        # Default arg values. Right aligned with args.
+        self.defaults = defaults
+        # Whether the function accepts additional positional params
+        self.dyn_args = dyn_args
+        # Whether the function accepts additional keyword params
+        self.dyn_kwargs = dyn_kwargs
+
+def import_and_parse_identifiers(env, name):
+    source, filename, uptodate = env.loader.get_source(env, name)
+    template_node = env._parse(source, name, filename)
+
+    namespace = namespace_from_tmpl(template_node, name, filename)
+
+    eval_ctx = jinja2.nodes.EvalContext(env, name)
+    eval_ctx.encoding = "utf-8"
+
+    frame = JSFrame(env, eval_ctx)
+    frame.identifiers.namespace = namespace
+    frame.inspect(template_node.body)
+    frame.toplevel = frame.rootlevel = True
+
+    return frame.identifiers
 
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
@@ -86,28 +124,46 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
             node.name,
         )
 
+        macro = Macro(
+            self.identifiers.namespace,
+            node.name,
+            node.args,
+            node.defaults,
+        )
+        self.identifiers.macros[macro.fullname] = macro
+        self.identifiers.exported_macros[macro.fullname] = macro
+
     def visit_Import(self, node):
         self.generic_visit(node)
 
-        path = node.template.value
-        namespace = namespace_from_import(self.environment, path)
+        name = node.template.value
+        identifiers = import_and_parse_identifiers(self.environment, name)
+        namespace = identifiers.namespace
+        self.identifiers.import_namespaces[name] = namespace
         self.identifiers.imports[node.target] = namespace
-        self.identifiers.import_namespaces[path] = namespace
 
         self.identifiers.declared_locally.add(node.target)
-
-        # Need to find all the macros defined in this namespace
 
     def visit_FromImport(self, node):
         self.generic_visit(node)
 
         path = node.template.value
-        namespace = namespace_from_import(self.environment, path)
+        identifiers = import_and_parse_identifiers(self.environment, path)
+        namespace = identifiers.namespace
         self.identifiers.import_namespaces[path] = namespace
 
         for item in node.names:
             name = item[1] if isinstance(item, tuple) else item
             self.identifiers.imports[name] = dot_join(namespace, name)
+
+            try:
+                macro = identifiers.exported_macros[dot_join(namespace, name)]
+            except KeyError:
+                raise TemplateAssertionError(
+                    'Template %r does not contain a macro named %r' %
+                    (path, name), 0)
+
+            self.identifiers.macros[macro.fullname] = macro
 
             self.identifiers.declared_locally.add(name)
 
@@ -149,6 +205,10 @@ class JSFrame(jinja2.compiler.Frame):
         # Track if we are escaping some output
         self.escaped = False
 
+        if parent is not None:
+            self.identifiers.imports = parent.identifiers.imports
+            self.identifiers.macros = parent.identifiers.macros
+
     def inspect(self, nodes):
         """Walk the node and check for identifiers.  If the scope is hard (eg:
         enforce on a python level) overrides from outer scopes are tracked
@@ -160,9 +220,7 @@ class JSFrame(jinja2.compiler.Frame):
             visitor.visit(node)
 
     def inner(self):
-        frame = JSFrame(self.environment, self.eval_ctx, self)
-        frame.identifiers.imports = self.identifiers.imports
-        return frame
+        return JSFrame(self.environment, self.eval_ctx, self)
 
 
 class BaseCodeGenerator(NodeVisitor):
@@ -997,6 +1055,41 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.write(", ")
             self.write(forward_caller)
 
+    def macro_signature(self, node, frame, macro):
+        self.write("%s(" % macro.fullname)
+
+        data = collections.OrderedDict()
+        dyn_args = []
+        dyn_kwargs = collections.OrderedDict()
+
+        for i, arg in enumerate(node.args):
+            try:
+                key = macro.args[i]
+            except IndexError:
+                dyn_args.append(arg)
+            else:
+                data[key.name] = arg
+
+        for arg in node.kwargs:
+            if arg.key in data:
+                raise TemplateAssertionError('Arg provided twice')
+            if any(arg.key == n.name for n in macro.args):
+                data[arg.key] = arg.value
+            else:
+                dyn_kwargs[arg.key] = arg.value
+
+        if data:
+            self.write("{")
+            for i, (key, value) in enumerate(data.iteritems()):
+                self.write(key)
+                self.write(': ')
+                self.visit(value, frame)
+                if i < len(data) - 1:
+                    self.write(', ')
+            self.write("}")
+
+        self.write(")")
+
     def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
         dotted_name = []
@@ -1004,6 +1097,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
         call_frame.escaped = True
         self.visit(node.node, call_frame, dotted_name=dotted_name)
         func_name = ".".join(dotted_name)
+
+        macro = frame.identifiers.macros.get(func_name)
+        if macro:
+            self.macro_signature(node, frame, macro)
+            return
 
         # Like signature(), this assumes that function calls with only
         # positional arguments are calls to javascript functions. This

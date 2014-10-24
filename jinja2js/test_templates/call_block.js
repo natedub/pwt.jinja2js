@@ -17,6 +17,6 @@ j2.call_block.render = function(__data) {
         __output += 'Hello ' + _.escape(name) + '!';
         return __output;
     };
-    __output += j2.call_block.render_dialog({'__jinja2_kwargs__': true, 'type': 'box'}, func_caller);
+    __output += j2.call_block.render_dialog({type: 'box'});
     return __output;
 };

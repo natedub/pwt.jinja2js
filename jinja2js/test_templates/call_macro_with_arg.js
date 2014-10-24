@@ -11,8 +11,14 @@ j2.call_macro_with_arg.testif = function(__data) {
     return __output;
 };
 
-j2.call_macro_with_arg.testcall = function(__data) {
+j2.call_macro_with_arg.testcall_kwarg = function(__data) {
     var __output = '';
-    __output += '\n' + j2.call_macro_with_arg.testif({'__jinja2_kwargs__': true, 'option': true}) + '\n';
+    __output += '\n' + j2.call_macro_with_arg.testif({option: true}) + '\n';
+    return __output;
+};
+
+j2.call_macro_with_arg.testcall_arg = function(__data) {
+    var __output = '';
+    __output += '\n' + j2.call_macro_with_arg.testif({option: true}) + '\n';
     return __output;
 };
