@@ -5,6 +5,10 @@
 {% endif %}
 {% endmacro %}
 
-{% macro testcall() %}
+{% macro testcall_kwarg() %}
 {{ testif(option=true) }}
+{% endmacro %}
+
+{% macro testcall_arg() %}
+{{ testif(true) }}
 {% endmacro %}

@@ -1,6 +1,18 @@
 {% namespace j2.import %}
-{% from "call_macro.jinja" import testcall %}
+{% from "keyword_args.jinja" import mixed_macro %}
 
-{% macro mac() %}
-{{ testcall() }}
+{% macro test_pos_arg() %}
+{{ mixed_macro('foo_pos') }}
+{% endmacro %}
+
+{% macro test_pos_args() %}
+{{ mixed_macro('foo_pos', 'bar_pos') }}
+{% endmacro %}
+
+{% macro test_mixed_args() %}
+{{ mixed_macro('foo_arg', bar='bar_kw') }}
+{% endmacro %}
+
+{% macro test_all_kwargs() %}
+{{ mixed_macro(foo='foo_arg', bar='bar_kw') }}
 {% endmacro %}
