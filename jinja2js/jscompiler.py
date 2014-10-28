@@ -1,4 +1,5 @@
 import collections
+import logging
 import os
 import re
 
@@ -12,6 +13,7 @@ from jinja2.utils import escape
 
 from jinja2js import nodes
 
+log = logging.getLogger(__name__)
 
 UNARYOP = {
     "not ": "!"
@@ -132,6 +134,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
         )
         self.identifiers.macros[macro.fullname] = macro
         self.identifiers.exported_macros[macro.fullname] = macro
+        log.debug('Indexing %r %r', macro.fullname, macro)
 
     def visit_Import(self, node):
         self.generic_visit(node)
@@ -164,6 +167,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
                     (path, name), 0)
 
             self.identifiers.macros[macro.fullname] = macro
+            log.debug('Indexing %r %r', macro.fullname, macro)
 
             self.identifiers.declared_locally.add(name)
 
