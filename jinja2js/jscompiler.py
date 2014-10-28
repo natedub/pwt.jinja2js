@@ -149,9 +149,10 @@ def import_and_parse_identifiers(env, options, name):
 
 class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
-    def __init__(self, identifiers, environment, ctx):
+    def __init__(self, identifiers, environment, options, ctx):
         self.identifiers = identifiers
         self.environment = environment
+        self.options = options
         self.ctx = ctx
 
     def blockvisit(self, nodes):
@@ -267,7 +268,7 @@ class JSFrame(jinja2.compiler.Frame):
         differently.
         """
         visitor = JSFrameIdentifierVisitor(
-            self.identifiers, self.environment, self.eval_ctx)
+            self.identifiers, self.environment, self.options, self.eval_ctx)
         for node in nodes:
             visitor.visit(node)
 
