@@ -84,7 +84,54 @@ class Macro(object):
         # Whether the function accepts additional keyword params
         self.dyn_kwargs = dyn_kwargs
 
-def import_and_parse_identifiers(env, name):
+    def call_signature(self, gen, node, frame):
+        gen.write('%s(' % self.fullname)
+
+        data = collections.OrderedDict()
+        dyn_args = []
+        dyn_kwargs = collections.OrderedDict()
+
+        for i, arg in enumerate(node.args):
+            try:
+                key = self.args[i]
+            except IndexError:
+                dyn_args.append(arg)
+            else:
+                data[key.name] = arg
+
+        for arg in node.kwargs:
+            if arg.key in data:
+                raise TemplateAssertionError('Arg provided twice')
+            if any(arg.key == n.name for n in self.args):
+                data[arg.key] = arg.value
+            else:
+                dyn_kwargs[arg.key] = arg.value
+
+        if data:
+            gen.write("{")
+            for i, (key, value) in enumerate(data.iteritems()):
+                gen.write(key)
+                gen.write(': ')
+                gen.visit(value, frame)
+                if i < len(data) - 1:
+                    gen.write(', ')
+            gen.write("}")
+
+        gen.write(")")
+
+class JSFunction(object):
+    def __init__(self, js_name):
+        self.js_name = js_name
+
+    def call_signature(self, gen, node, frame):
+        gen.write('%s(' % self.js_name)
+        for i, arg in enumerate(node.args):
+            if i > 0:
+                gen.write(', ')
+            gen.visit(arg, frame)
+        gen.visit(')')
+
+def import_and_parse_identifiers(env, options, name):
     source, filename, uptodate = env.loader.get_source(env, name)
     template_node = env._parse(source, name, filename)
 
@@ -93,7 +140,7 @@ def import_and_parse_identifiers(env, name):
     eval_ctx = jinja2.nodes.EvalContext(env, name)
     eval_ctx.encoding = "utf-8"
 
-    frame = JSFrame(env, eval_ctx)
+    frame = JSFrame(env, options, eval_ctx)
     frame.identifiers.namespace = namespace
     frame.inspect(template_node.body)
     frame.toplevel = frame.rootlevel = True
@@ -140,7 +187,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
         self.generic_visit(node)
 
         name = node.template.value
-        identifiers = import_and_parse_identifiers(self.environment, name)
+        identifiers = import_and_parse_identifiers(self.environment, self.options, name)
         namespace = identifiers.namespace
         self.identifiers.import_namespaces[name] = namespace
         self.identifiers.imports[node.target] = namespace
@@ -151,7 +198,7 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
         self.generic_visit(node)
 
         path = node.template.value
-        identifiers = import_and_parse_identifiers(self.environment, path)
+        identifiers = import_and_parse_identifiers(self.environment, self.options, path)
         namespace = identifiers.namespace
         self.identifiers.import_namespaces[path] = namespace
 
@@ -1066,41 +1113,6 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.write(", ")
             self.write(forward_caller)
 
-    def macro_signature(self, node, frame, macro):
-        self.write("%s(" % macro.fullname)
-
-        data = collections.OrderedDict()
-        dyn_args = []
-        dyn_kwargs = collections.OrderedDict()
-
-        for i, arg in enumerate(node.args):
-            try:
-                key = macro.args[i]
-            except IndexError:
-                dyn_args.append(arg)
-            else:
-                data[key.name] = arg
-
-        for arg in node.kwargs:
-            if arg.key in data:
-                raise TemplateAssertionError('Arg provided twice')
-            if any(arg.key == n.name for n in macro.args):
-                data[arg.key] = arg.value
-            else:
-                dyn_kwargs[arg.key] = arg.value
-
-        if data:
-            self.write("{")
-            for i, (key, value) in enumerate(data.iteritems()):
-                self.write(key)
-                self.write(': ')
-                self.visit(value, frame)
-                if i < len(data) - 1:
-                    self.write(', ')
-            self.write("}")
-
-        self.write(")")
-
     def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
         dotted_name = []
@@ -1111,7 +1123,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
 
         macro = frame.identifiers.macros.get(func_name)
         if macro:
-            self.macro_signature(node, frame, macro)
+            macro.call_signature(self, node, frame)
             return
 
         # Like signature(), this assumes that function calls with only
