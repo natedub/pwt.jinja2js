@@ -1086,33 +1086,6 @@ class MacroCodeGenerator(BaseCodeGenerator):
         self.visit(node.call, frame, forward_caller="func_caller")
         self.write(";")
 
-    def signature(self, node, frame, forward_caller):
-        if node.dyn_args or node.dyn_kwargs:
-            msg = "JS Does not support positional or keyword arguments"
-            raise TemplateAssertionError(msg, node.lineno, self.name,
-                                         self.filename)
-
-        if node.args:
-            start_arg = True
-            for arg in node.args:
-                if not start_arg:
-                    self.write(", ")
-                self.visit(arg, frame)
-                start_arg = False
-
-        if node.kwargs:
-            if node.args:
-                self.write(", ")
-            self.write("{'__jinja2_kwargs__': true")
-            for kwarg in node.kwargs:
-                self.write(", '%s': " % kwarg.key)
-                self.visit(kwarg.value, frame)
-            self.write("}")
-
-        if forward_caller is not None:
-            self.write(", ")
-            self.write(forward_caller)
-
     def visit_Call(self, node, frame, forward_caller=None):
         # function symbol to call
         dotted_name = []
@@ -1126,18 +1099,10 @@ class MacroCodeGenerator(BaseCodeGenerator):
             macro.call_signature(self, node, frame)
             return
 
-        # Like signature(), this assumes that function calls with only
-        # positional arguments are calls to javascript functions. This
-        # allows you to call differently named functions in the client JS
-        # than when rendering a template on the server.
-        aliases = self.options['js_func_aliases']
-        if node.args and not node.kwargs and func_name in aliases:
-            func_name = self.environment.js_func_aliases[func_name]
-
-        # function signature
-        self.write("%s(" % func_name)
-        self.signature(node, frame, forward_caller)
-        self.write(")")
+        if func_name in self.options['js_functions']:
+            func = self.options['js_functions'][func_name]
+            func.call_signature(self, node, frame)
+            return
 
     def visit_Assign(self, node, frame):
         # XXX - test that we don't override any variable names doing this
