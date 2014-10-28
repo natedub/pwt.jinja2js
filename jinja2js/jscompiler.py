@@ -192,11 +192,12 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
 
 class JSFrame(jinja2.compiler.Frame):
 
-    def __init__(self, environment, eval_ctx, parent=None):
+    def __init__(self, environment, options, eval_ctx, parent=None):
         super(JSFrame, self).__init__(eval_ctx, parent)
 
         self.identifiers = JSIdentifiers()
         self.environment = environment
+        self.options = options
 
         # mapping of visit_Name callback to reassign variable names for use
         # in 'for' loops
@@ -224,15 +225,16 @@ class JSFrame(jinja2.compiler.Frame):
             visitor.visit(node)
 
     def inner(self):
-        return JSFrame(self.environment, self.eval_ctx, self)
+        return JSFrame(self.environment, self.options, self.eval_ctx, self)
 
 
 class BaseCodeGenerator(NodeVisitor):
 
-    def __init__(self, environment, name, filename):
+    def __init__(self, environment, options, name, filename):
         super(BaseCodeGenerator, self).__init__()
 
         self.environment = environment
+        self.options = options
         self.name = name
         self.filename = filename
 
@@ -258,7 +260,7 @@ class BaseCodeGenerator(NodeVisitor):
         self._indentation = 0
 
         # the character(s) to display as a single indent
-        self._indentation_text = getattr(environment, 'js_indentation', '    ')
+        self._indentation_text = options['js_indentation']
 
     def indent(self):
         """Indent by one."""
@@ -355,8 +357,8 @@ def namespace_from_import(env, name):
 
 class CodeGenerator(BaseCodeGenerator):
 
-    def __init__(self, environment, name, filename):
-        super(CodeGenerator, self).__init__(environment, name, filename)
+    def __init__(self, environment, options, name, filename):
+        super(CodeGenerator, self).__init__(environment, options, name, filename)
         self.namespace = None
 
     def visit_Template(self, node):
@@ -379,7 +381,7 @@ class CodeGenerator(BaseCodeGenerator):
         eval_ctx.encoding = "utf-8"
 
         # process the root
-        frame = JSFrame(self.environment, eval_ctx)
+        frame = JSFrame(self.environment, self.options, eval_ctx)
         frame.identifiers.namespace = self.namespace
         frame.inspect(node.body)
         frame.toplevel = frame.rootlevel = True
@@ -397,9 +399,14 @@ class CodeGenerator(BaseCodeGenerator):
         self.visit_Import(node, frame)
 
     def visit_Macro(self, node, frame):
-        generator = MacroCodeGenerator(self.environment, self.stream,
-                                       self.namespace, self.name,
-                                       self.filename)
+        generator = MacroCodeGenerator(
+            self.environment,
+            self.options,
+            self.stream,
+            self.namespace,
+            self.name,
+            self.filename,
+        )
         generator.visit(node, frame)
 
     def visit_Const(self, node, frame):
@@ -429,8 +436,8 @@ class MacroCodeGenerator(BaseCodeGenerator):
     # templates, comments should be displayed in the JS file. We need them for
     # any closure compiler hints we may want to put in.
 
-    def __init__(self, environment, stream, namespace, name, filename):
-        super(MacroCodeGenerator, self).__init__(environment, name, filename)
+    def __init__(self, environment, options, stream, namespace, name, filename):
+        super(MacroCodeGenerator, self).__init__(environment, options, name, filename)
 
         self.stream = stream
         self.namespace = namespace
@@ -483,7 +490,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
                     start = False
                 else:
                     self.write_outputappend_add(node, frame)
-                if getattr(self.environment, "strip_html_whitespace", False):
+                if self.options['strip_html_whitespace']:
                     item = [strip_html_whitespace(itemhtml)
                             for itemhtml in item]
                 self.write(repr("".join(item))[1:])
@@ -1111,7 +1118,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # positional arguments are calls to javascript functions. This
         # allows you to call differently named functions in the client JS
         # than when rendering a template on the server.
-        aliases = getattr(self.environment, "js_func_aliases", [])
+        aliases = self.options['js_func_aliases']
         if node.args and not node.kwargs and func_name in aliases:
             func_name = self.environment.js_func_aliases[func_name]
 
@@ -1154,28 +1161,39 @@ _pre_tag_whitespace = re.compile(r'\s*<')
 _post_tag_whitespace = re.compile(r'>\s*')
 _excess_whitespace = re.compile(r'\s\s+')
 
-
 def strip_html_whitespace(value):
     value = _pre_tag_whitespace.sub('<', value)
     value = _post_tag_whitespace.sub('>', value)
     return _excess_whitespace.sub(' ', value)
 
 
-def generate(environment, name, filename):
+def default_options():
+    return {
+        'js_functions': [],
+        'js_indentation': '    ',
+        'strip_html_whitespace': False,
+    }
+
+def generate(environment, name, filename, options=None):
     """Generate the javascript source for jinja template."""
     src, path, uptodate = environment.loader.get_source(environment, filename)
     node = environment.parse(src)
 
-    return _generate(node, environment, name, filename)
+    return _generate(node, environment, name, filename, options=None)
 
 
-def generate_from_string(environment, src):
+def generate_from_string(environment, src, options=None):
     node = environment.parse(src)
 
     return _generate(node, environment, "", "")
 
 
-def _generate(node, environment, name, filename):
-    generator = CodeGenerator(environment, name, filename)
+def _generate(node, environment, name, filename, options=None):
+    if options is None:
+        options = {}
+    for key, value in default_options().items():
+        options.setdefault(key, value)
+
+    generator = CodeGenerator(environment, options, name, filename)
     generator.visit(node)
     return generator.stream.getvalue()
