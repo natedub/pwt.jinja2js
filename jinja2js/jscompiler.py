@@ -131,6 +131,13 @@ class JSFunction(object):
             gen.visit(arg, frame)
         gen.visit(')')
 
+class Loop(object):
+    def __init__(self, name):
+        self.name = name
+        self.list = '__%sList' % name
+        self.length = '__%sListLength' % name
+        self.index = '__%sIndex' % name
+
 def import_and_parse_identifiers(env, options, name):
     source, filename, uptodate = env.loader.get_source(env, name)
     template_node = env._parse(source, name, filename)
@@ -253,9 +260,8 @@ class JSFrame(jinja2.compiler.Frame):
         # in 'for' loops
         self.reassigned_names = {}
 
-        # name -> method mapping for handling special variables in the
-        # for loop
-        self.forloop_buffer = None
+        self.current_loop = None
+        self.declared_loops = {}
 
         # Track if we are escaping some output
         self.escaped = False
@@ -276,6 +282,14 @@ class JSFrame(jinja2.compiler.Frame):
 
     def inner(self):
         return JSFrame(self.environment, self.options, self.eval_ctx, self)
+
+    def new_loop(self, node):
+        basename = name = node.target.name
+        i = 0
+        while name in self.declared_loops:
+            i += 1
+            name = basename + i
+        return Loop(name)
 
 
 class BaseCodeGenerator(NodeVisitor):
@@ -750,46 +764,49 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.write(".".join(dotted_name))
 
     def visit_Getattr(self, node, frame, dotted_name=None):
-        # We only need to check when `loop` is the first name-space in the
-        # Getattr node. Sometimes we have more then one level name-spaces and
-        # we are inside a for loop, likely when we are calling other macros.
-        if frame.forloop_buffer and getattr(node.node, "name", None) == "loop":
-            if node.attr == "index0":
-                self.write("%sIndex" % frame.forloop_buffer)
-            elif node.attr == "index":
-                self.write("%sIndex + 1" % frame.forloop_buffer)
-            elif node.attr == "revindex0":
-                self.write("%sListLen - %sIndex" %
-                           (frame.forloop_buffer, frame.forloop_buffer))
-            elif node.attr == "revindex":
-                self.write("%sListLen - %sIndex - 1" %
-                           (frame.forloop_buffer, frame.forloop_buffer))
-            elif node.attr == "first":
-                self.write("%sIndex == 0" % frame.forloop_buffer)
-            elif node.attr == "last":
-                self.write("%sIndex == (%sListLen - 1)" %
-                           (frame.forloop_buffer, frame.forloop_buffer))
-            elif node.attr == "length":
-                self.write("%sListLen" % frame.forloop_buffer)
-            elif node.attr == "cycle":
-                self.write('_.arg_getter(%sIndex)' % frame.forloop_buffer)
+        if dotted_name is None \
+        and frame.current_loop \
+        and isinstance(node.node, jinja2.nodes.Name):
+            rhs_name = node.node.name
+            if rhs_name == 'loop':
+                loop = frame.current_loop
+            elif rhs_name in frame.declared_loops:
+                loop = frame.declared_loops[rhs_name]
             else:
-                raise AttributeError("loop.%s not defined" % node.attr)
-        else:
-            # write_variable is going to be true if dotted_name is None which
-            # implies that we are gathering the variable name together. So
-            # don't write it out yet.
-            write_variable = False
-            if dotted_name is None:
-                dotted_name = []
-                write_variable = True
+                loop = None
+            if loop:
+                if node.attr == 'index':
+                    self.write('%s + 1' % loop.index)
+                elif node.attr == 'index0':
+                    self.write('%s' % loop.index)
+                elif node.attr == 'revindex0':
+                    self.write('%s - %s' % (loop.length, loop.index))
+                elif node.attr == 'revindex':
+                    self.write('%s - %s - 1' % (loop.length, loop.index))
+                elif node.attr == 'first':
+                    self.write('!%s' % loop.index)
+                elif node.attr == 'last':
+                    self.write('%s == (%s - 1)' % (loop.index, loop.length))
+                elif node.attr == 'length':
+                    self.write(loop.length)
+                elif node.attr == 'cycle':
+                    raise NotImplementedError()
+                return
 
-            # collect variable name
-            self.visit(node.node, frame, dotted_name)
-            dotted_name.append(node.attr)
+        # write_variable is going to be true if dotted_name is None which
+        # implies that we are gathering the variable name together. So
+        # don't write it out yet.
+        write_variable = False
+        if dotted_name is None:
+            dotted_name = []
+            write_variable = True
 
-            if write_variable:
-                self.write(".".join(dotted_name))
+        # collect variable name
+        self.visit(node.node, frame, dotted_name)
+        dotted_name.append(node.attr)
+
+        if write_variable:
+            self.write(".".join(dotted_name))
 
     def binop(operator):
         def visitor(self, node, frame):
@@ -943,15 +960,29 @@ class MacroCodeGenerator(BaseCodeGenerator):
         # try to figure out if we have an extended loop.  An extended loop
         # is necessary if the loop is in recursive mode or if the special loop
         # variable is accessed in the body.
-        extended_loop = "loop" in jinja2.compiler.find_undeclared(
-            node.iter_child_nodes(only=("body",)), ("loop",))
+        extended_loop = jinja2.compiler.find_undeclared(node.body, ('loop',))
 
         # JavaScript for loops don't change namespace
         loop_frame = frame.soft()
 
+        loop = loop_frame.current_loop = loop_frame.new_loop(node)
+
+        self.writeline('var %s = ' % loop.list)
+        self.visit(node.iter, loop_frame)
+        self.write(';')
+
+        self.writeline('var %s = %s.length;' % (loop.length, loop.list))
+
+        self.writeline('for (var %(idx)s = 0; %(idx)s < %(len)s; ++%(idx)s) {' % {
+            'idx': loop.index,
+            'len': loop.length,
+        })
+        self.indent()
+        self.writeline('var %s = %s[%s];' % (loop.name, loop.list, loop.index))
+
         if extended_loop:
             loop_frame.identifiers.add_special("loop")
-            loop_frame.forloop_buffer = node.target.name
+
         for name in node.find_all(jinja2.nodes.Name):
             if name.ctx == "store" and name.name == "loop":
                 msg = ("Can't assign to special loop variable in for-loop "
@@ -959,33 +990,12 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 raise TemplateAssertionError(msg, name.lineno, self.name,
                                              self.filename)
 
-        self.writeline("var %sList = " % node.target.name)
-        self.visit(node.iter, loop_frame)
-        self.write(";")
-
-        self.writeline("var %(name)sListLen = %(name)sList.length;"
-                       % {"name": node.target.name})
-        if node.else_:
-            self.writeline("if (%sListLen > 0) {" % node.target.name)
-            self.indent()
-
-        self.writeline("for (var %(name)sIndex = 0; %(name)sIndex <"
-                       " %(name)sListLen; %(name)sIndex++) {"
-                       % {"name": node.target.name})
-        self.indent()
-
-        self.writeline("var %(name)sData = %(name)sList[%(name)sIndex];" %
-                       {"name": node.target.name})
-
-        target_name = "%sData" % node.target.name
-        loop_frame.reassigned_names[node.target.name] = target_name
         self.blockvisit(node.body, loop_frame)
         self.outdent()
         self.writeline("}")
 
         if node.else_:
-            self.outdent()
-            self.writeline("} else {")
+            self.writeline("if (!%s) {" % loop.length)
             self.indent()
             self.blockvisit(node.else_, frame)
             self.outdent()
@@ -1107,7 +1117,15 @@ class MacroCodeGenerator(BaseCodeGenerator):
             func.call_signature(self, node, frame)
             return
 
+        log.debug('Undefined function %r' % func_name)
+
     def visit_Assign(self, node, frame):
+        if isinstance(node.node, jinja2.nodes.Name) \
+        and node.node.name == 'loop' \
+        and 'loop' in frame.identifiers.declared:
+            frame.declared_loops[node.target.name] = frame.current_loop
+            return
+
         # XXX - test that we don't override any variable names doing this
         self.newline(node)
 

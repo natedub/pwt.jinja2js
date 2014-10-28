@@ -1,0 +1,13 @@
+{% namespace j2.for_loop_nested %}
+{% macro nested_extended_loops_and_else(json) %}
+    {%- for row in json['rows'] -%}
+        {{ loop.index }}:
+        {%- set row_loop = loop -%}
+        {%- for col in row -%}
+            {{ row_loop.index }} x {{ loop.index }} = {{ col }}
+        {%- else -%}
+            No data
+        {%- endfor -%}
+        <br>
+    {%- endfor -%}
+{% endmacro %}

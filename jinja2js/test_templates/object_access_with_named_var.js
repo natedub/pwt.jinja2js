@@ -7,11 +7,11 @@ j2.object_access_with_named_var.test_named_access = function(__data) {
     goog.asserts.assert(goog.isDef(allowed_types), "Required parameter not provided: allowed_types");
     var __output = '';
     __output += '\n';
-    var tList = allowed_types;
-    var tListLen = tList.length;
-    for (var tIndex = 0; tIndex < tListLen; tIndex++) {
-        var tData = tList[tIndex];
-        __output += '\n' + _.escape(types[tData]) + '\n';
+    var __tList = allowed_types;
+    var __tListLength = __tList.length;
+    for (var __tIndex = 0; __tIndex < __tListLength; ++__tIndex) {
+        var t = __tList[__tIndex];
+        __output += '\n' + _.escape(types[t]) + '\n';
     }
     __output += '\n';
     return __output;
@@ -24,11 +24,11 @@ j2.object_access_with_named_var.test_named_access_sub_value = function(__data) {
     goog.asserts.assert(goog.isDef(allowed_types), "Required parameter not provided: allowed_types");
     var __output = '';
     __output += '\n';
-    var tList = allowed_types;
-    var tListLen = tList.length;
-    for (var tIndex = 0; tIndex < tListLen; tIndex++) {
-        var tData = tList[tIndex];
-        __output += '\n' + _.escape(types[tData.name]) + '\n';
+    var __tList = allowed_types;
+    var __tListLength = __tList.length;
+    for (var __tIndex = 0; __tIndex < __tListLength; ++__tIndex) {
+        var t = __tList[__tIndex];
+        __output += '\n' + _.escape(types[t.name]) + '\n';
     }
     __output += '\n';
     return __output;
@@ -41,11 +41,11 @@ j2.object_access_with_named_var.test_named_access_assigned_value = function(__da
     __output += '\n';
     var types = {'h1': 'H1'};
     __output += '\n';
-    var tList = allowed_types;
-    var tListLen = tList.length;
-    for (var tIndex = 0; tIndex < tListLen; tIndex++) {
-        var tData = tList[tIndex];
-        __output += '\n' + _.escape(types[tData.name]) + '\n';
+    var __tList = allowed_types;
+    var __tListLength = __tList.length;
+    for (var __tIndex = 0; __tIndex < __tListLength; ++__tIndex) {
+        var t = __tList[__tIndex];
+        __output += '\n' + _.escape(types[t.name]) + '\n';
     }
     __output += '\n';
     return __output;
