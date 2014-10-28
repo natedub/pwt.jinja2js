@@ -193,6 +193,8 @@ class JSFrameIdentifierVisitor(jinja2.compiler.FrameIdentifierVisitor):
         self.identifiers.import_namespaces[name] = namespace
         self.identifiers.imports[node.target] = namespace
 
+        self.identifiers.macros.update(identifiers.macros)
+
         self.identifiers.declared_locally.add(node.target)
 
     def visit_FromImport(self, node):
