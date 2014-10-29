@@ -50,6 +50,8 @@ def load_and_compare(source_file, expected_file):
                 f.seek(0)
                 f.write(src)
                 f.truncate()
+            else:
+                raise
 
 
 def test_file_templates():
