@@ -764,8 +764,7 @@ class MacroCodeGenerator(BaseCodeGenerator):
             self.write(".".join(dotted_name))
 
     def visit_Getattr(self, node, frame, dotted_name=None):
-        if dotted_name is None \
-        and frame.current_loop \
+        if frame.current_loop \
         and isinstance(node.node, jinja2.nodes.Name):
             rhs_name = node.node.name
             if rhs_name == 'loop':
@@ -790,7 +789,11 @@ class MacroCodeGenerator(BaseCodeGenerator):
                 elif node.attr == 'length':
                     self.write(loop.length)
                 elif node.attr == 'cycle':
-                    raise NotImplementedError()
+                    if dotted_name is None:
+                        raise TemplateAssertionError(
+                            'loop.cycle must be called, not set to a variable', 0)
+                    dotted_name.append('loop')
+                    dotted_name.append('cycle')
                 return
 
         # write_variable is going to be true if dotted_name is None which
@@ -1106,6 +1109,25 @@ class MacroCodeGenerator(BaseCodeGenerator):
         call_frame.escaped = True
         self.visit(node.node, call_frame, dotted_name=dotted_name)
         func_name = ".".join(dotted_name)
+
+        # Write out a loop.cycle() call
+        if frame.current_loop and func_name.endswith('.cycle'):
+            loop = None
+            if func_name == 'loop.cycle':
+                loop = frame.current_loop
+            else:
+                for assigned_name in frame.declared_loops:
+                    if func_name == '%s.cycle' % assigned_name:
+                        loop = frame.declared_loops[assigned_name]
+                        break
+            if loop:
+                self.write('_.cycle(%s, [' % loop.index)
+                for i, arg in enumerate(node.args):
+                    if i > 0:
+                        self.write(', ')
+                    self.visit(arg, frame)
+                self.write('])')
+                return
 
         macro = frame.identifiers.macros.get(func_name)
         if macro:

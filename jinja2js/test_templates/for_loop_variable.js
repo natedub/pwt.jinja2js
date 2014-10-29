@@ -100,7 +100,7 @@ j2.for_loop_variable.for_loop_var_cycle = function(__data) {
     var __iListLength = __iList.length;
     for (var __iIndex = 0; __iIndex < __iListLength; ++__iIndex) {
         var i = __iList[__iIndex];
-        __output += ;
+        __output += _.cycle(__iIndex, ['odd', 'even']);
     }
     return __output;
 };
@@ -117,7 +117,7 @@ j2.for_loop_variable.for_loop_var_cycle_vars = function(__data) {
     var __iListLength = __iList.length;
     for (var __iIndex = 0; __iIndex < __iListLength; ++__iIndex) {
         var i = __iList[__iIndex];
-        __output += ;
+        __output += _.cycle(__iIndex, [var1, var2]);
     }
     return __output;
 };
