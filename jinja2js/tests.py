@@ -15,18 +15,29 @@ env = Environment(loader=PackageLoader('jinja2js', 'test_templates'),
                   extensions=['jinja2js.ext.Namespace'],
                   autoescape=True)
 
+UPDATE_JS = bool(os.environ.get('UPDATE_JS'))
+VERBOSE = bool(os.environ.get('VERBOSE'))
+TESTS = os.environ.get('TESTS')
+if TESTS:
+    TESTS = map(str.strip, TESTS.split(','))
 
 def compare(result, expected):
     # Vim adds an extra linefeed at the end of the file, so we get rid of it
     result = result.strip()
     expected = expected.strip()
     if result != expected:
+        if VERBOSE:
+            print 'RESULT:'
+            print result
+            print
+            print 'EXPECTED:'
+            print expected
+            print
+            print 'DIFF:'
         for change in difflib.unified_diff(result.strip().split('\n'),
                                            expected.strip().split('\n')):
             print change
         assert False, "Result and expected do not match"
-
-UPDATE_JS = bool(os.environ.get('UPDATE_JS'))
 
 def load_and_compare(source_file, expected_file):
     src = jscompiler.generate(env, expected_file, source_file)
@@ -39,7 +50,6 @@ def load_and_compare(source_file, expected_file):
                 f.seek(0)
                 f.write(src)
                 f.truncate()
-            raise
 
 
 def test_file_templates():
@@ -50,6 +60,9 @@ def test_file_templates():
 
     files = os.listdir(directory)
     files = fnmatch.filter(files, '*.jinja')
+
+    if TESTS:
+        files = [f for f in files if f in TESTS]
 
     for f in files:
         js_file = os.path.join(directory, re.sub('\\.jinja$', '.js', f))
